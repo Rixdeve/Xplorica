@@ -1,29 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-
-// ── Mock Data ──────────────────────────────────────────────────────────────
-const MOCK_GUIDES = [
-  { id: 1, fullName: "Nimal Perera", photoUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80", description: "Award-winning cultural heritage guide with 12 years leading tours across the Cultural Triangle. Specialising in Sigiriya, Polonnaruwa, and Dambulla cave temples.", licenseNumber: "SLG-0042", yearsExperience: 12, languages: ["English", "Sinhala", "German"], destinations: ["Sigiriya", "Polonnaruwa", "Dambulla", "Kandy"], averageRating: 4.9, totalRatings: 87, status: "APPROVED" },
-  { id: 2, fullName: "Priya Dharmaratne", photoUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80", description: "Passionate tea country expert born and raised in Ella. I offer immersive hiking, tea factory tours, and sunset experiences along the famous Nine Arch Bridge.", licenseNumber: "SLG-0117", yearsExperience: 7, languages: ["English", "Sinhala", "Japanese"], destinations: ["Ella", "Nuwara Eliya", "Haputale"], averageRating: 4.8, totalRatings: 64, status: "APPROVED" },
-  { id: 3, fullName: "Chamara Jayasinghe", photoUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&q=80", description: "Marine biologist turned whale-watching and coastal guide. Specialise in Mirissa whale watching, Galle Fort Dutch colonial history, and seafood experiences.", licenseNumber: "SLG-0089", yearsExperience: 9, languages: ["English", "French", "Sinhala"], destinations: ["Galle", "Mirissa", "Unawatuna", "Tangalle"], averageRating: 4.7, totalRatings: 52, status: "APPROVED" },
-  { id: 4, fullName: "Amara Silva", photoUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80", description: "Wildlife enthusiast and certified safari guide at Yala and Udawalawe national parks. Expert in leopard tracking, elephant photography, and bird watching.", licenseNumber: "SLG-0203", yearsExperience: 5, languages: ["English", "Sinhala", "Tamil"], destinations: ["Yala", "Udawalawe", "Bundala"], averageRating: 4.6, totalRatings: 41, status: "APPROVED" },
-  { id: 5, fullName: "Ranjith Fernando", photoUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80", description: "Colombo food and street tour specialist. Discover hidden gems, colonial architecture, and the real Colombo through local eyes. Night market tours available.", licenseNumber: "SLG-0156", yearsExperience: 6, languages: ["English", "Sinhala", "Mandarin"], destinations: ["Colombo", "Negombo"], averageRating: 4.5, totalRatings: 38, status: "APPROVED" },
-  { id: 6, fullName: "Tharini Wickramasinghe", photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80", description: "Adventure and trekking guide specialising in Adam's Peak, Knuckles Mountain Range, and Horton Plains. Certified first-aid provider and wilderness guide.", licenseNumber: "SLG-0271", yearsExperience: 8, languages: ["English", "Sinhala", "Italian"], destinations: ["Adam's Peak", "Knuckles Range", "Horton Plains"], averageRating: 4.8, totalRatings: 59, status: "APPROVED" },
-];
-
-const MOCK_REVIEWS = {
-  1: [
-    { id: 1, touristName: "Emma R.", stars: 5, comment: "Nimal was absolutely phenomenal. His knowledge of Sigiriya is unparalleled!", createdAt: "2025-11-15" },
-    { id: 2, touristName: "Daniel M.", stars: 5, comment: "Best guide in Sri Lanka, hands down. Booked twice!", createdAt: "2025-10-03" },
-  ],
-  2: [
-    { id: 3, touristName: "Sophie L.", stars: 5, comment: "Priya made Ella magical. The tea factory visit was incredible.", createdAt: "2025-12-01" },
-  ],
-};
+import * as api from "./api.js";
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 const DESTINATIONS = ["Sigiriya", "Kandy", "Ella", "Galle", "Colombo", "Yala", "Nuwara Eliya", "Mirissa", "Dambulla", "Adam's Peak"];
-const LANGUAGES = ["English", "Sinhala", "Tamil", "French", "German", "Japanese", "Mandarin", "Italian"];
+const LANGUAGES    = ["English", "Sinhala", "Tamil", "French", "German", "Japanese", "Mandarin", "Italian"];
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const Stars = ({ rating, size = "sm", interactive = false, onRate }) => {
@@ -33,7 +14,9 @@ const Stars = ({ rating, size = "sm", interactive = false, onRate }) => {
     <span className={`flex gap-0.5 ${sz}`}>
       {[1,2,3,4,5].map(n => (
         <span key={n}
-          className={`cursor-${interactive?"pointer":"default"} transition-colors ${n <= (interactive ? (hover || rating) : rating) ? "text-amber-400" : "text-slate-300"}`}
+          className={`cursor-${interactive ? "pointer" : "default"} transition-colors ${
+            n <= (interactive ? (hover || rating) : rating) ? "text-amber-400" : "text-slate-300"
+          }`}
           onMouseEnter={() => interactive && setHover(n)}
           onMouseLeave={() => interactive && setHover(0)}
           onClick={() => interactive && onRate && onRate(n)}
@@ -44,13 +27,22 @@ const Stars = ({ rating, size = "sm", interactive = false, onRate }) => {
 };
 
 const Badge = ({ children, color = "emerald" }) => {
-  const map = { emerald: "bg-emerald-100 text-emerald-800", blue: "bg-blue-100 text-blue-800", amber: "bg-amber-100 text-amber-800", slate: "bg-slate-100 text-slate-600" };
+  const map = {
+    emerald: "bg-emerald-100 text-emerald-800",
+    blue:    "bg-blue-100 text-blue-800",
+    amber:   "bg-amber-100 text-amber-800",
+    slate:   "bg-slate-100 text-slate-600",
+  };
   return <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${map[color]}`}>{children}</span>;
 };
 
 const Input = ({ label, type = "text", value, onChange, required, placeholder, className = "" }) => (
   <div className={`flex flex-col gap-1.5 ${className}`}>
-    {label && <label className="text-sm font-semibold text-slate-700">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>}
+    {label && (
+      <label className="text-sm font-semibold text-slate-700">
+        {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+      </label>
+    )}
     <input type={type} value={value} onChange={e => onChange(e.target.value)} required={required}
       placeholder={placeholder}
       className="border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white transition" />
@@ -67,13 +59,13 @@ const Textarea = ({ label, value, onChange, placeholder, rows = 4 }) => (
 
 const Btn = ({ children, onClick, type = "button", variant = "primary", size = "md", full = false, disabled = false, className = "" }) => {
   const base = "font-semibold rounded-full transition-all inline-flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed";
-  const sizes = { sm: "px-4 py-2 text-sm", md: "px-6 py-2.5 text-sm", lg: "px-8 py-3 text-base" };
+  const sizes    = { sm: "px-4 py-2 text-sm", md: "px-6 py-2.5 text-sm", lg: "px-8 py-3 text-base" };
   const variants = {
     primary: "bg-blue-700 text-white hover:bg-blue-800 active:scale-95",
     emerald: "bg-emerald-500 text-white hover:bg-emerald-600 active:scale-95",
     outline: "border-2 border-blue-700 text-blue-700 hover:bg-blue-50 active:scale-95",
-    ghost: "text-slate-600 hover:bg-slate-100 rounded-xl active:scale-95",
-    danger: "bg-red-500 text-white hover:bg-red-600 active:scale-95",
+    ghost:   "text-slate-600 hover:bg-slate-100 rounded-xl active:scale-95",
+    danger:  "bg-red-500 text-white hover:bg-red-600 active:scale-95",
   };
   return (
     <button type={type} onClick={onClick} disabled={disabled}
@@ -86,8 +78,9 @@ const Btn = ({ children, onClick, type = "button", variant = "primary", size = "
 const Avatar = ({ name, photo, size = 48 }) => {
   const initials = name?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() || "?";
   return photo
-    ? <img src={photo} alt={name} className="rounded-full object-cover flex-shrink-0" style={{ width: size, height: size }} />
-    : <div className="rounded-full bg-gradient-to-br from-blue-600 to-emerald-400 flex items-center justify-center text-white font-bold flex-shrink-0" style={{ width: size, height: size, fontSize: size * 0.35 }}>{initials}</div>;
+    ? <img src={photo} alt={name} className="rounded-full object-cover shrink-0" style={{ width: size, height: size }} />
+    : <div className="rounded-full bg-linear-to-br from-blue-600 to-emerald-400 flex items-center justify-center text-white font-bold shrink-0"
+        style={{ width: size, height: size, fontSize: size * 0.35 }}>{initials}</div>;
 };
 
 const Modal = ({ open, onClose, children, title }) => {
@@ -108,27 +101,46 @@ const Modal = ({ open, onClose, children, title }) => {
   );
 };
 
+const Spinner = () => (
+  <div className="flex justify-center items-center py-16">
+    <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+  </div>
+);
+
 // ══════════════════════════════════════════════════════════════════════════
 // PAGES
 // ══════════════════════════════════════════════════════════════════════════
 
 // ── Landing Page ──────────────────────────────────────────────────────────
 function LandingPage({ onNav, onLogin, onRegister }) {
+  const [featuredGuides, setFeaturedGuides] = useState([]);
+
+  useEffect(() => {
+    api.listGuides().then(data => setFeaturedGuides(data.slice(0, 3))).catch(() => {});
+  }, []);
+
   return (
     <div>
       {/* Hero */}
-      <section className="relative min-h-screen flex items-center overflow-hidden" style={{ background: "linear-gradient(135deg, #071b40 0%, #0d4a6b 50%, #0f6e56 100%)" }}>
-        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "url('https://www.travelvoice.lk/wp-content/uploads/2024/05/1588843579185.jpg')", backgroundSize: "cover", backgroundPosition: "center" }} />
+      <section className="relative min-h-screen flex items-center overflow-hidden"
+        style={{ background: "linear-gradient(135deg, #071b40 0%, #0d4a6b 50%, #0f6e56 100%)" }}>
+        <div className="absolute inset-0 opacity-20"
+          style={{ backgroundImage: "url('https://www.travelvoice.lk/wp-content/uploads/2024/05/1588843579185.jpg')", backgroundSize: "cover", backgroundPosition: "center" }} />
         <div className="relative max-w-7xl mx-auto px-6 py-24 grid md:grid-cols-2 gap-12 items-center w-full">
           <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7 }}>
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur border border-white/20 rounded-full px-4 py-2 text-white/90 text-sm mb-6">
               <span className="text-emerald-400">✓</span> Trusted Sri Lankan local guides
             </div>
-            <h1 className="text-5xl md:text-6xl font-black text-white leading-tight">Explore the<br /><span className="text-emerald-400">Real Sri Lanka</span><br />with Locals</h1>
-            <p className="mt-5 text-lg text-blue-100 max-w-lg leading-relaxed">Connect directly with verified local guides for personalised, authentic travel experiences across the Pearl of the Indian Ocean.</p>
+            <h1 className="text-5xl md:text-6xl font-black text-white leading-tight">
+              Explore the<br /><span className="text-emerald-400">Real Sri Lanka</span><br />with Locals
+            </h1>
+            <p className="mt-5 text-lg text-blue-100 max-w-lg leading-relaxed">
+              Connect directly with verified local guides for personalised, authentic travel experiences across the Pearl of the Indian Ocean.
+            </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <Btn size="lg" variant="emerald" onClick={() => onNav("browse")}>Find a Guide</Btn>
-              <Btn size="lg" variant="outline" onClick={() => onRegister("GUIDE")} className="border-white text-white hover:bg-white hover:text-blue-900">Become a Guide</Btn>
+              <Btn size="lg" variant="outline" onClick={() => onRegister("GUIDE")}
+                className="border-white text-white hover:bg-white hover:text-blue-900">Become a Guide</Btn>
             </div>
             <div className="mt-8 flex flex-wrap gap-6 text-white/80 text-sm">
               <span>★ 4.8 avg. rating</span>
@@ -136,11 +148,13 @@ function LandingPage({ onNav, onLogin, onRegister }) {
               <span>🌍 50+ destinations</span>
             </div>
           </motion.div>
+
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.3 }}
             className="hidden md:block">
-            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] p-4 max-w-sm ml-auto shadow-2xl">
-              <div className="bg-white rounded-[1.5rem] p-5">
-                <div className="aspect-video rounded-xl bg-cover bg-center mb-4" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1588598198321-9735fd52455b?w=600&q=80')" }} />
+            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-4xl p-4 max-w-sm ml-auto shadow-2xl">
+              <div className="bg-white rounded-3xl p-5">
+                <div className="aspect-video rounded-xl bg-cover bg-center mb-4"
+                  style={{ backgroundImage: "url('https://images.unsplash.com/photo-1588598198321-9735fd52455b?w=600&q=80')" }} />
                 <p className="text-xs font-bold text-emerald-600 mb-1">⭐ Top Rated Guide</p>
                 <h3 className="text-lg font-black text-blue-950">Sigiriya Sunrise Walk</h3>
                 <p className="text-sm text-slate-500 mt-1">Private tour · 6 hours · Cultural Triangle</p>
@@ -164,8 +178,8 @@ function LandingPage({ onNav, onLogin, onRegister }) {
           <div className="grid md:grid-cols-3 gap-8">
             {[
               { icon: "🔎", step: "01", title: "Search & Filter", desc: "Browse verified guides by destination, language, and star rating." },
-              { icon: "👤", step: "02", title: "Connect & Chat", desc: "View profiles, read reviews, then message your guide directly." },
-              { icon: "📅", step: "03", title: "Book & Explore", desc: "Confirm your date, pay securely, and explore Sri Lanka authentically." },
+              { icon: "👤", step: "02", title: "Connect & Chat",  desc: "View profiles, read reviews, then message your guide directly." },
+              { icon: "📅", step: "03", title: "Book & Explore",  desc: "Confirm your date, pay securely, and explore Sri Lanka authentically." },
             ].map(s => (
               <motion.div key={s.step} whileHover={{ y: -6 }}
                 className="bg-white rounded-3xl p-8 shadow-sm hover:shadow-xl transition-all border border-slate-100 text-center">
@@ -179,42 +193,49 @@ function LandingPage({ onNav, onLogin, onRegister }) {
         </div>
       </section>
 
-      {/* Featured Guides */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-end justify-between mb-12">
-            <div>
-              <p className="text-emerald-600 font-bold text-sm uppercase tracking-wider mb-2">Featured guides</p>
-              <h2 className="text-4xl font-black text-blue-950">Top rated this month</h2>
+      {/* Featured Guides — live from DB */}
+      {featuredGuides.length > 0 && (
+        <section className="py-24 bg-white">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="flex items-end justify-between mb-12">
+              <div>
+                <p className="text-emerald-600 font-bold text-sm uppercase tracking-wider mb-2">Featured guides</p>
+                <h2 className="text-4xl font-black text-blue-950">Top rated this month</h2>
+              </div>
+              <Btn variant="outline" onClick={() => onNav("browse")}>View all</Btn>
             </div>
-            <Btn variant="outline" onClick={() => onNav("browse")}>View all</Btn>
+            <div className="grid md:grid-cols-3 gap-6">
+              {featuredGuides.map(g => (
+                <GuideCard key={g.id} guide={g} onView={() => onNav("guide", g)} />
+              ))}
+            </div>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {MOCK_GUIDES.slice(0, 3).map(g => (
-              <GuideCard key={g.id} guide={g} onView={() => onNav("guide", g)} />
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* For tourists / For guides */}
       <section className="py-24 bg-slate-50">
         <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-6">
-          <div className="bg-blue-950 rounded-[2rem] p-10 text-white">
+          <div className="bg-blue-950 rounded-4xl p-10 text-white">
             <p className="text-emerald-300 font-bold mb-3">For tourists</p>
             <h2 className="text-3xl font-black mb-5">Discover hidden gems with local experts</h2>
             {["Travel like a local, not just a visitor.", "Filter by language, destination, and rating.", "Chat directly before you commit."].map(t => (
-              <p key={t} className="flex items-start gap-3 text-blue-100 mb-3"><span className="text-emerald-400 font-bold mt-0.5">✓</span>{t}</p>
+              <p key={t} className="flex items-start gap-3 text-blue-100 mb-3">
+                <span className="text-emerald-400 font-bold mt-0.5">✓</span>{t}
+              </p>
             ))}
             <Btn variant="emerald" size="lg" className="mt-6" onClick={() => onNav("browse")}>Start Exploring</Btn>
           </div>
-          <div className="bg-gradient-to-br from-emerald-600 to-blue-700 rounded-[2rem] p-10 text-white">
+          <div className="bg-linear-to-br from-emerald-600 to-blue-700 rounded-4xl p-10 text-white">
             <p className="text-emerald-100 font-bold mb-3">For tour guides</p>
             <h2 className="text-3xl font-black mb-5">Earn income sharing your local knowledge</h2>
             {["Reach international travellers instantly.", "Manage bookings and messages in one place.", "Build your reputation through verified ratings."].map(t => (
-              <p key={t} className="flex items-start gap-3 text-emerald-50 mb-3"><span className="text-white font-bold mt-0.5">✓</span>{t}</p>
+              <p key={t} className="flex items-start gap-3 text-emerald-50 mb-3">
+                <span className="text-white font-bold mt-0.5">✓</span>{t}
+              </p>
             ))}
-            <Btn className="mt-6 bg-white text-blue-800 hover:bg-blue-50 px-7 py-3 rounded-full font-semibold" onClick={() => onRegister("GUIDE")}>Join as a Guide</Btn>
+            <Btn className="mt-6 bg-white text-blue-800 hover:bg-blue-50 px-7 py-3 rounded-full font-semibold"
+              onClick={() => onRegister("GUIDE")}>Join as a Guide</Btn>
           </div>
         </div>
       </section>
@@ -227,16 +248,19 @@ function LandingPage({ onNav, onLogin, onRegister }) {
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { name: "Emma R.", country: "United Kingdom", text: "Xplorica LK made my Sri Lanka trip feel personal and safe. My guide showed me places I'd never find online.", stars: 5 },
-              { name: "Daniel M.", country: "Australia", text: "The booking was simple and the guide was professional. Perfect for authentic local experiences.", stars: 5 },
-              { name: "Nadeesha P.", country: "Sri Lanka", text: "As a local guide, this platform helps me reach international travellers and manage my bookings easily.", stars: 5 },
+              { name: "Emma R.",      country: "United Kingdom", stars: 5, text: "Xplorica LK made my Sri Lanka trip feel personal and safe. My guide showed me places I'd never find online." },
+              { name: "Daniel M.",    country: "Australia",      stars: 5, text: "The booking was simple and the guide was professional. Perfect for authentic local experiences." },
+              { name: "Nadeesha P.", country: "Sri Lanka",       stars: 5, text: "As a local guide, this platform helps me reach international travellers and manage my bookings easily." },
             ].map(r => (
               <div key={r.name} className="bg-slate-50 rounded-3xl p-8 border border-slate-100">
                 <Stars rating={r.stars} />
                 <p className="mt-4 text-slate-700 leading-relaxed italic">"{r.text}"</p>
                 <div className="mt-6 flex items-center gap-3">
                   <Avatar name={r.name} size={40} />
-                  <div><p className="font-bold text-blue-950">{r.name}</p><p className="text-sm text-slate-500">{r.country}</p></div>
+                  <div>
+                    <p className="font-bold text-blue-950">{r.name}</p>
+                    <p className="text-sm text-slate-500">{r.country}</p>
+                  </div>
                 </div>
               </div>
             ))}
@@ -250,7 +274,8 @@ function LandingPage({ onNav, onLogin, onRegister }) {
         <p className="text-blue-200 mb-8">Join thousands of travellers who discovered the real Sri Lanka.</p>
         <div className="flex justify-center gap-4">
           <Btn size="lg" variant="emerald" onClick={() => onNav("browse")}>Find a Guide Now</Btn>
-          <Btn size="lg" onClick={() => onRegister("TOURIST")} className="bg-white text-blue-900 hover:bg-blue-50 px-8 py-3 rounded-full font-semibold">Sign Up Free</Btn>
+          <Btn size="lg" onClick={() => onRegister("TOURIST")}
+            className="bg-white text-blue-900 hover:bg-blue-50 px-8 py-3 rounded-full font-semibold">Sign Up Free</Btn>
         </div>
       </section>
     </div>
@@ -263,12 +288,12 @@ function GuideCard({ guide, onView }) {
     <motion.div whileHover={{ y: -4 }}
       className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-slate-100 cursor-pointer"
       onClick={onView}>
-      <div className="h-48 bg-gradient-to-br from-blue-100 to-emerald-50 relative overflow-hidden">
+      <div className="h-48 bg-linear-to-br from-blue-100 to-emerald-50 relative overflow-hidden">
         {guide.photoUrl
           ? <img src={guide.photoUrl} alt={guide.fullName} className="w-full h-full object-cover" />
           : <div className="w-full h-full flex items-center justify-center"><Avatar name={guide.fullName} size={80} /></div>}
         <div className="absolute top-3 right-3">
-          <Badge color="amber">★ {guide.averageRating}</Badge>
+          <Badge color="amber">★ {guide.averageRating ?? "—"}</Badge>
         </div>
       </div>
       <div className="p-6">
@@ -278,34 +303,49 @@ function GuideCard({ guide, onView }) {
         </div>
         <p className="text-sm text-slate-500 line-clamp-2 mb-4">{guide.description}</p>
         <div className="flex flex-wrap gap-1.5 mb-4">
-          {guide.destinations.slice(0, 3).map(d => <Badge key={d} color="blue">{d}</Badge>)}
-          {guide.destinations.length > 3 && <Badge color="slate">+{guide.destinations.length - 3}</Badge>}
+          {(guide.destinations || []).slice(0, 3).map(d => <Badge key={d} color="blue">{d}</Badge>)}
+          {(guide.destinations || []).length > 3 && <Badge color="slate">+{guide.destinations.length - 3}</Badge>}
         </div>
         <div className="flex items-center justify-between">
           <div className="flex flex-wrap gap-1">
-            {guide.languages.slice(0, 2).map(l => <Badge key={l} color="emerald">{l}</Badge>)}
+            {(guide.languages || []).slice(0, 2).map(l => <Badge key={l} color="emerald">{l}</Badge>)}
           </div>
-          <Stars rating={Math.round(guide.averageRating)} />
+          <Stars rating={Math.round(guide.averageRating ?? 0)} />
         </div>
       </div>
     </motion.div>
   );
 }
 
-// ── Browse / Tourist Home ─────────────────────────────────────────────────
-function BrowsePage({ onSelectGuide, user }) {
-  const [lang, setLang] = useState("");
-  const [dest, setDest] = useState("");
+// ── Browse Page ───────────────────────────────────────────────────────────
+function BrowsePage({ onSelectGuide }) {
+  const [lang, setLang]           = useState("");
+  const [dest, setDest]           = useState("");
   const [minRating, setMinRating] = useState(0);
-  const filtered = MOCK_GUIDES.filter(g =>
-    (!lang || g.languages.some(l => l.toLowerCase().includes(lang.toLowerCase()))) &&
-    (!dest || g.destinations.some(d => d.toLowerCase().includes(dest.toLowerCase()))) &&
-    (g.averageRating >= minRating)
-  );
+  const [guides, setGuides]       = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState("");
+
+  // Fetch from DB whenever a filter changes
+  useEffect(() => {
+    setLoading(true);
+    setError("");
+    api.listGuides({
+      language:    lang    || undefined,
+      destination: dest    || undefined,
+      minRating:   minRating || undefined,
+    })
+      .then(data => setGuides(data))
+      .catch(err => setError(err.message || "Failed to load guides"))
+      .finally(() => setLoading(false));
+  }, [lang, dest, minRating]);
+
+  const clearFilters = () => { setLang(""); setDest(""); setMinRating(0); };
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-12">
       <h1 className="text-3xl font-black text-blue-950 mb-8">Find Your Perfect Guide</h1>
+
       {/* Filters */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mb-8 grid md:grid-cols-4 gap-4">
         <div>
@@ -335,21 +375,35 @@ function BrowsePage({ onSelectGuide, user }) {
           </select>
         </div>
         <div className="flex items-end">
-          <Btn full variant="primary" onClick={() => { setLang(""); setDest(""); setMinRating(0); }}>
-            Clear Filters
-          </Btn>
+          <Btn full variant="primary" onClick={clearFilters}>Clear Filters</Btn>
         </div>
       </div>
-      <p className="text-slate-500 text-sm mb-5">{filtered.length} guide{filtered.length !== 1 ? "s" : ""} found</p>
-      <div className="grid md:grid-cols-3 gap-6">
-        {filtered.map(g => <GuideCard key={g.id} guide={g} onView={() => onSelectGuide(g)} />)}
-      </div>
-      {filtered.length === 0 && (
-        <div className="text-center py-16 text-slate-400">
-          <p className="text-5xl mb-4">🔍</p>
-          <p className="text-xl font-semibold">No guides match your filters</p>
-          <p className="mt-2">Try adjusting your search criteria</p>
+
+      {loading && <Spinner />}
+
+      {!loading && error && (
+        <div className="text-center py-12 text-red-500 bg-red-50 rounded-2xl">
+          <p className="text-lg font-semibold">⚠ {error}</p>
+          <p className="text-sm mt-1">Make sure the backend is running on port 8080.</p>
         </div>
+      )}
+
+      {!loading && !error && (
+        <>
+          <p className="text-slate-500 text-sm mb-5">
+            {guides.length} guide{guides.length !== 1 ? "s" : ""} found
+          </p>
+          <div className="grid md:grid-cols-3 gap-6">
+            {guides.map(g => <GuideCard key={g.id} guide={g} onView={() => onSelectGuide(g)} />)}
+          </div>
+          {guides.length === 0 && (
+            <div className="text-center py-16 text-slate-400">
+              <p className="text-5xl mb-4">🔍</p>
+              <p className="text-xl font-semibold">No approved guides match your filters</p>
+              <p className="mt-2">Try adjusting your search criteria or check back later.</p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -358,19 +412,77 @@ function BrowsePage({ onSelectGuide, user }) {
 // ── Guide Detail Page ─────────────────────────────────────────────────────
 function GuideDetailPage({ guide, user, onBack, onChat, onBook }) {
   const [showRateModal, setShowRateModal] = useState(false);
-  const [stars, setStars] = useState(0);
-  const [comment, setComment] = useState("");
-  const [reviews, setReviews] = useState(MOCK_REVIEWS[guide.id] || []);
-  const [showBookModal, setShowBookModal] = useState(false);
-  const [bookDate, setBookDate] = useState("");
-  const [bookPeople, setBookPeople] = useState(1);
-  const [bookMsg, setBookMsg] = useState("");
+  const [stars, setStars]                 = useState(0);
+  const [comment, setComment]             = useState("");
+  const [rateError, setRateError]         = useState("");
+  const [rateLoading, setRateLoading]     = useState(false);
 
-  const submitRating = () => {
+  const [reviews, setReviews]             = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+
+  const [showBookModal, setShowBookModal] = useState(false);
+  const [bookDate, setBookDate]           = useState("");
+  const [bookPeople, setBookPeople]       = useState(1);
+  const [bookMsg, setBookMsg]             = useState("");
+  const [bookLoading, setBookLoading]     = useState(false);
+  const [bookingId, setBookingId]         = useState(null);
+
+  // Load ratings from DB
+  useEffect(() => {
+    api.getGuideRatings(guide.id)
+      .then(data => setReviews(data))
+      .catch(() => {})
+      .finally(() => setReviewsLoading(false));
+  }, [guide.id]);
+
+  const openBookModal = () => {
+    setBookDate(""); setBookPeople(1); setBookMsg(""); setBookingId(null);
+    setShowBookModal(true);
+  };
+
+  // Submit rating to DB
+  const submitRating = async () => {
     if (!stars) return;
-    setReviews(prev => [...prev, { id: Date.now(), touristName: user?.fullName || "You", stars, comment, createdAt: new Date().toISOString().slice(0,10) }]);
-    setShowRateModal(false);
-    setStars(0); setComment("");
+    setRateLoading(true);
+    setRateError("");
+    try {
+      await api.rateGuide(guide.id, { stars, comment });
+      // Append optimistically
+      setReviews(prev => [{
+        id: Date.now(),
+        touristName: user?.fullName || "You",
+        stars,
+        comment,
+        createdAt: new Date().toISOString(),
+      }, ...prev]);
+      setShowRateModal(false);
+      setStars(0); setComment("");
+    } catch (err) {
+      setRateError(err.message || "Failed to submit review.");
+    } finally {
+      setRateLoading(false);
+    }
+  };
+
+  // Create booking in DB
+  const createBooking = async () => {
+    if (!bookDate) return;
+    setBookLoading(true);
+    try {
+      const booking = await api.createBooking({
+        guideId:       guide.id,
+        tourDate:      bookDate,
+        numberOfPeople: bookPeople,
+        totalAmount:   35 * bookPeople,
+        destination:   (guide.destinations || [])[0] || "",
+      });
+      setBookingId(booking.id);
+      setBookMsg("🎉 Booking confirmed! Proceed to payment to complete.");
+    } catch (err) {
+      setBookMsg("❌ " + (err.message || "Booking failed. Please try again."));
+    } finally {
+      setBookLoading(false);
+    }
   };
 
   return (
@@ -382,7 +494,7 @@ function GuideDetailPage({ guide, user, onBack, onChat, onBook }) {
         {/* Left */}
         <div className="md:col-span-1 space-y-6">
           <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-100">
-            <div className="h-64 bg-gradient-to-br from-blue-100 to-emerald-50 flex items-center justify-center">
+            <div className="h-64 bg-linear-to-br from-blue-100 to-emerald-50 flex items-center justify-center">
               {guide.photoUrl
                 ? <img src={guide.photoUrl} alt={guide.fullName} className="w-full h-full object-cover" />
                 : <Avatar name={guide.fullName} size={100} />}
@@ -390,24 +502,28 @@ function GuideDetailPage({ guide, user, onBack, onChat, onBook }) {
             <div className="p-5">
               <h1 className="text-2xl font-black text-blue-950">{guide.fullName}</h1>
               <div className="flex items-center gap-2 mt-2">
-                <Stars rating={Math.round(guide.averageRating)} />
-                <span className="text-sm text-slate-500">{guide.averageRating} ({guide.totalRatings} reviews)</span>
+                <Stars rating={Math.round(guide.averageRating ?? 0)} />
+                <span className="text-sm text-slate-500">
+                  {guide.averageRating ?? "—"} ({guide.totalRatings ?? 0} reviews)
+                </span>
               </div>
               <div className="mt-4 space-y-2 text-sm text-slate-600">
-                <p>🪪 License: {guide.licenseNumber}</p>
-                <p>📅 {guide.yearsExperience} years experience</p>
+                {guide.licenseNumber && <p>🪪 License: {guide.licenseNumber}</p>}
+                {guide.yearsExperience && <p>📅 {guide.yearsExperience} years experience</p>}
               </div>
               <div className="mt-4 flex flex-wrap gap-1.5">
-                {guide.languages.map(l => <Badge key={l} color="emerald">{l}</Badge>)}
+                {(guide.languages || []).map(l => <Badge key={l} color="emerald">{l}</Badge>)}
               </div>
             </div>
           </div>
           {/* Actions */}
           <div className="space-y-3">
-            <Btn full variant="primary" onClick={() => setShowBookModal(true)}>📅 Book This Guide</Btn>
+            <Btn full variant="primary" onClick={openBookModal}>📅 Book This Guide</Btn>
             {user && <Btn full variant="outline" onClick={() => onChat(guide)}>💬 Chat with Guide</Btn>}
-            {user && user.role === "TOURIST" && (
-              <Btn full variant="ghost" onClick={() => setShowRateModal(true)}>⭐ Leave a Review</Btn>
+            {user?.role === "TOURIST" && (
+              <Btn full variant="ghost" onClick={() => { setRateError(""); setStars(0); setComment(""); setShowRateModal(true); }}>
+                ⭐ Leave a Review
+              </Btn>
             )}
           </div>
         </div>
@@ -421,41 +537,50 @@ function GuideDetailPage({ guide, user, onBack, onChat, onBook }) {
           <div className="bg-white rounded-3xl p-7 shadow-sm border border-slate-100">
             <h2 className="text-lg font-bold text-blue-950 mb-4">Destinations</h2>
             <div className="flex flex-wrap gap-2">
-              {guide.destinations.map(d => (
+              {(guide.destinations || []).map(d => (
                 <span key={d} className="bg-blue-50 text-blue-800 font-semibold text-sm px-4 py-2 rounded-full">📍 {d}</span>
               ))}
             </div>
           </div>
-          {/* Share Location */}
-          <div className="bg-gradient-to-r from-blue-50 to-emerald-50 rounded-3xl p-7 border border-blue-100">
+
+          {/* Location Sharing */}
+          <div className="bg-linear-to-r from-blue-50 to-emerald-50 rounded-3xl p-7 border border-blue-100">
             <h2 className="text-lg font-bold text-blue-950 mb-3">📍 Location Sharing</h2>
             <p className="text-slate-600 text-sm mb-4">Share your live location with your guide for seamless meetups.</p>
-            <Btn variant="primary" size="sm" onClick={() => alert("Location sharing enabled! Your guide will receive your coordinates.")}>
+            <Btn variant="primary" size="sm"
+              onClick={() => alert("Location sharing enabled! Your guide will receive your coordinates.")}>
               Enable Location Sharing
             </Btn>
           </div>
-          {/* Reviews */}
+
+          {/* Reviews from DB */}
           <div className="bg-white rounded-3xl p-7 shadow-sm border border-slate-100">
             <h2 className="text-lg font-bold text-blue-950 mb-5">Reviews ({reviews.length})</h2>
-            {reviews.length === 0
-              ? <p className="text-slate-400 text-sm">No reviews yet. Be the first!</p>
-              : <div className="space-y-5">
-                  {reviews.map(r => (
-                    <div key={r.id} className="pb-5 border-b border-slate-100 last:border-0 last:pb-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <Avatar name={r.touristName} size={36} />
-                          <div>
-                            <p className="font-semibold text-blue-950 text-sm">{r.touristName}</p>
-                            <p className="text-xs text-slate-400">{r.createdAt}</p>
+            {reviewsLoading
+              ? <Spinner />
+              : reviews.length === 0
+                ? <p className="text-slate-400 text-sm">No reviews yet. Be the first!</p>
+                : (
+                  <div className="space-y-5">
+                    {reviews.map(r => (
+                      <div key={r.id} className="pb-5 border-b border-slate-100 last:border-0 last:pb-0">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <Avatar name={r.touristName} size={36} />
+                            <div>
+                              <p className="font-semibold text-blue-950 text-sm">{r.touristName}</p>
+                              <p className="text-xs text-slate-400">
+                                {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : ""}
+                              </p>
+                            </div>
                           </div>
+                          <Stars rating={r.stars} />
                         </div>
-                        <Stars rating={r.stars} />
+                        {r.comment && <p className="text-sm text-slate-600 ml-12">{r.comment}</p>}
                       </div>
-                      {r.comment && <p className="text-sm text-slate-600 ml-12">{r.comment}</p>}
-                    </div>
-                  ))}
-                </div>}
+                    ))}
+                  </div>
+                )}
           </div>
         </div>
       </div>
@@ -467,8 +592,12 @@ function GuideDetailPage({ guide, user, onBack, onChat, onBook }) {
             <p className="text-sm font-semibold text-slate-700 mb-3">Your Rating</p>
             <Stars rating={stars} size="lg" interactive onRate={setStars} />
           </div>
-          <Textarea label="Comment (optional)" value={comment} onChange={setComment} placeholder="Share your experience..." rows={4} />
-          <Btn full variant="primary" onClick={submitRating} disabled={!stars}>Submit Review</Btn>
+          <Textarea label="Comment (optional)" value={comment} onChange={setComment}
+            placeholder="Share your experience..." rows={4} />
+          {rateError && <p className="text-red-500 text-sm bg-red-50 rounded-xl px-4 py-2">{rateError}</p>}
+          <Btn full variant="primary" onClick={submitRating} disabled={!stars || rateLoading}>
+            {rateLoading ? "Submitting…" : "Submit Review"}
+          </Btn>
         </div>
       </Modal>
 
@@ -476,7 +605,8 @@ function GuideDetailPage({ guide, user, onBack, onChat, onBook }) {
       <Modal open={showBookModal} onClose={() => setShowBookModal(false)} title={`Book ${guide.fullName}`}>
         <div className="space-y-5">
           <Input label="Tour Date" type="date" value={bookDate} onChange={setBookDate} required />
-          <Input label="Number of People" type="number" value={bookPeople} onChange={v => setBookPeople(Number(v))} required />
+          <Input label="Number of People" type="number" value={bookPeople}
+            onChange={v => setBookPeople(Math.max(1, Number(v)))} required />
           <div className="bg-slate-50 rounded-2xl p-4">
             <div className="flex justify-between text-sm text-slate-600 mb-1">
               <span>Rate per person</span><span>$35</span>
@@ -486,71 +616,117 @@ function GuideDetailPage({ guide, user, onBack, onChat, onBook }) {
             </div>
           </div>
           {bookMsg
-            ? <div className="bg-emerald-50 text-emerald-700 rounded-xl p-3 text-sm font-medium text-center">{bookMsg}</div>
-            : <Btn full variant="emerald" disabled={!bookDate} onClick={() => setBookMsg("🎉 Booking confirmed! Proceed to payment to complete.")}>Confirm Booking</Btn>
-          }
-          {bookMsg && <Btn full variant="primary" onClick={() => onBook({ guide, date: bookDate, people: bookPeople, total: 35 * bookPeople })}>Proceed to Payment →</Btn>}
+            ? <div className={`${bookMsg.startsWith("❌") ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"} rounded-xl p-3 text-sm font-medium text-center`}>
+                {bookMsg}
+              </div>
+            : (
+              <Btn full variant="emerald" disabled={!bookDate || bookLoading} onClick={createBooking}>
+                {bookLoading ? "Creating Booking…" : "Confirm Booking"}
+              </Btn>
+            )}
+          {bookMsg && !bookMsg.startsWith("❌") && bookingId && (
+            <Btn full variant="primary"
+              onClick={() => onBook({ bookingId, guide, date: bookDate, people: bookPeople, total: 35 * bookPeople })}>
+              Proceed to Payment →
+            </Btn>
+          )}
         </div>
       </Modal>
     </div>
   );
 }
 
-// ── Auth Pages ─────────────────────────────────────────────────────────────
+// ── Auth Page ─────────────────────────────────────────────────────────────
 function AuthPage({ mode, defaultRole, onSuccess, onSwitch }) {
   const isLogin = mode === "login";
-  // step: 1 = basic info, 2 = guide-specific profile
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     email: "", password: "", fullName: "", role: defaultRole || "TOURIST",
-    // Guide-only fields
     description: "", licenseNumber: "", yearsExperience: "",
-    photoFile: null, photoPreview: null, photoUrl: "",
+    photoFile: null, photoPreview: null,
     languages: [], destinations: [],
   });
-  const [error, setError] = useState("");
+  const [error, setError]     = useState("");
+  const [loading, setLoading] = useState(false);
   const isGuideRegister = !isLogin && form.role === "GUIDE";
 
-  const set = k => v => setForm(p => ({ ...p, [k]: v }));
+  const set    = k => v => setForm(p => ({ ...p, [k]: v }));
   const toggle = (key, val) => setForm(p => ({
-    ...p, [key]: p[key].includes(val) ? p[key].filter(i => i !== val) : [...p[key], val]
+    ...p, [key]: p[key].includes(val) ? p[key].filter(i => i !== val) : [...p[key], val],
   }));
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onloadend = () => setForm(p => ({ ...p, photoFile: file, photoPreview: reader.result, photoUrl: reader.result }));
+    reader.onloadend = () => setForm(p => ({ ...p, photoFile: file, photoPreview: reader.result }));
     reader.readAsDataURL(file);
   };
 
   const nextStep = (e) => {
     e.preventDefault();
     setError("");
-    if (!form.fullName.trim()) { setError("Full name is required."); return; }
-    if (!form.email.trim()) { setError("Email is required."); return; }
+    if (!form.fullName.trim())    { setError("Full name is required."); return; }
+    if (!form.email.trim())       { setError("Email is required."); return; }
     if (form.password.length < 6) { setError("Password must be at least 6 characters."); return; }
     setStep(2);
   };
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     setError("");
     if (isGuideRegister && step === 1) { nextStep(e); return; }
-    // Validate guide step 2
     if (isGuideRegister) {
-      if (!form.description.trim()) { setError("Please add a description about yourself."); return; }
-      if (form.languages.length === 0) { setError("Please select at least one language."); return; }
+      if (!form.description.trim())     { setError("Please add a description about yourself."); return; }
+      if (form.languages.length === 0)  { setError("Please select at least one language."); return; }
       if (form.destinations.length === 0) { setError("Please select at least one destination."); return; }
     }
-    if (!isLogin && !form.email) { setError("Please fill in all required fields."); return; }
-    const user = {
-      id: 1, email: form.email,
-      fullName: isLogin ? "Returning User" : form.fullName,
-      role: form.role,
-      photoUrl: form.photoPreview || null,
-    };
-    onSuccess(user);
+
+    setLoading(true);
+    try {
+      let authData;
+      if (isLogin) {
+        authData = await api.login({ email: form.email, password: form.password });
+      } else {
+        authData = await api.register({
+          email:    form.email,
+          password: form.password,
+          fullName: form.fullName,
+          role:     form.role,
+        });
+      }
+
+      api.setToken(authData.token);
+
+      // If guide registration — persist profile details
+      if (!isLogin && form.role === "GUIDE") {
+        const expRaw = String(form.yearsExperience).replace("+", "").trim();
+        await api.upsertGuideProfile({
+          description:     form.description,
+          licenseNumber:   form.licenseNumber || null,
+          yearsExperience: expRaw ? parseInt(expRaw, 10) : null,
+          languages:       form.languages,
+          destinations:    form.destinations,
+        });
+        if (form.photoFile) {
+          await api.uploadGuidePhoto(form.photoFile);
+        }
+      }
+
+      const user = {
+        id:             authData.userId,
+        email:          form.email,
+        fullName:       authData.fullName,
+        role:           authData.role,
+        guideProfileId: authData.guideProfileId,
+      };
+      api.saveUser(user);
+      onSuccess(user);
+    } catch (err) {
+      setError(err.message || "Authentication failed. Please check your credentials.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const stepIndicator = isGuideRegister && !isLogin && (
@@ -568,13 +744,12 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch }) {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-950 via-blue-900 to-emerald-900 p-4 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-950 via-blue-900 to-emerald-900 p-4 py-12">
       <motion.div key={step} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-8">
 
-        {/* Logo + title */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-blue-700 to-emerald-500 rounded-2xl text-white text-2xl font-black shadow-lg mb-4">X</div>
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-linear-to-br from-blue-700 to-emerald-500 rounded-2xl text-white text-2xl font-black shadow-lg mb-4">X</div>
           <h1 className="text-2xl font-black text-blue-950">
             {isLogin ? "Welcome back" : step === 1 ? "Create account" : "Complete your guide profile"}
           </h1>
@@ -585,12 +760,13 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch }) {
 
         {stepIndicator}
 
-        {/* Role selector — step 1 register only */}
+        {/* Role selector */}
         {!isLogin && step === 1 && (
           <div className="flex bg-slate-100 rounded-xl p-1 mb-5">
             {["TOURIST", "GUIDE"].map(r => (
               <button key={r} type="button" onClick={() => set("role")(r)}
-                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition ${form.role === r ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition
+                  ${form.role === r ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
                 {r === "TOURIST" ? "🌍 Tourist" : "🗺 Tour Guide"}
               </button>
             ))}
@@ -598,26 +774,25 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch }) {
         )}
 
         <form onSubmit={submit} className="space-y-4">
-
-          {/* ── STEP 1: Basic account info ── */}
+          {/* Step 1: basic account */}
           {(isLogin || step === 1) && (
             <>
               {!isLogin && <Input label="Full Name" value={form.fullName} onChange={set("fullName")} required placeholder="Your full name" />}
-              <Input label="Email" type="email" value={form.email} onChange={set("email")} required placeholder="your@email.com" />
+              <Input label="Email"    type="email"    value={form.email}    onChange={set("email")}    required placeholder="your@email.com" />
               <Input label="Password" type="password" value={form.password} onChange={set("password")} required placeholder="Min. 6 characters" />
             </>
           )}
 
-          {/* ── STEP 2: Guide profile fields ── */}
+          {/* Step 2: guide profile */}
           {isGuideRegister && step === 2 && (
             <>
-              {/* Photo upload */}
+              {/* Photo */}
               <div>
                 <label className="text-sm font-semibold text-slate-700 block mb-2">
-                  Profile Photo <span className="text-red-500">*</span>
+                  Profile Photo <span className="text-slate-400 font-normal">(optional)</span>
                 </label>
                 <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 rounded-2xl bg-slate-100 border-2 border-dashed border-slate-300 overflow-hidden flex items-center justify-center flex-shrink-0">
+                  <div className="w-20 h-20 rounded-2xl bg-slate-100 border-2 border-dashed border-slate-300 overflow-hidden flex items-center justify-center shrink-0">
                     {form.photoPreview
                       ? <img src={form.photoPreview} alt="Preview" className="w-full h-full object-cover" />
                       : <span className="text-3xl">📷</span>}
@@ -627,16 +802,14 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch }) {
                       <span>📂</span> Choose Photo
                       <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
                     </label>
-                    <p className="text-xs text-slate-400 mt-2">JPG, PNG or WEBP · Max 5MB</p>
+                    <p className="text-xs text-slate-400 mt-2">JPG, PNG or WEBP · Max 5 MB</p>
                   </div>
                 </div>
               </div>
 
-              {/* Description */}
-              <Textarea label="About You" value={form.description} onChange={set("description")}
+              <Textarea label="About You *" value={form.description} onChange={set("description")}
                 placeholder="Describe your experience, specialities, and what makes your tours unique..." rows={3} />
 
-              {/* License + Experience */}
               <div className="grid grid-cols-2 gap-4">
                 <Input label="Licence Number" value={form.licenseNumber} onChange={set("licenseNumber")} placeholder="SLG-0000" />
                 <div className="flex flex-col gap-1.5">
@@ -652,8 +825,7 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch }) {
               {/* Languages */}
               <div>
                 <label className="text-sm font-semibold text-slate-700 block mb-2">
-                  Languages Spoken <span className="text-red-500">*</span>
-                  <span className="text-slate-400 font-normal ml-1">({form.languages.length} selected)</span>
+                  Languages Spoken * <span className="text-slate-400 font-normal">({form.languages.length} selected)</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {LANGUAGES.map(l => (
@@ -661,9 +833,8 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch }) {
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all ${
                         form.languages.includes(l)
                           ? "bg-emerald-500 border-emerald-500 text-white shadow-sm scale-105"
-                          : "border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-700"}`}>
-                      {l}
-                    </button>
+                          : "border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-700"
+                      }`}>{l}</button>
                   ))}
                 </div>
               </div>
@@ -671,8 +842,7 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch }) {
               {/* Destinations */}
               <div>
                 <label className="text-sm font-semibold text-slate-700 block mb-2">
-                  Destinations You Offer <span className="text-red-500">*</span>
-                  <span className="text-slate-400 font-normal ml-1">({form.destinations.length} selected)</span>
+                  Destinations You Offer * <span className="text-slate-400 font-normal">({form.destinations.length} selected)</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {DESTINATIONS.map(d => (
@@ -680,9 +850,8 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch }) {
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all ${
                         form.destinations.includes(d)
                           ? "bg-blue-600 border-blue-600 text-white shadow-sm scale-105"
-                          : "border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-700"}`}>
-                      📍 {d}
-                    </button>
+                          : "border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-700"
+                      }`}>📍 {d}</button>
                   ))}
                 </div>
               </div>
@@ -695,17 +864,19 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch }) {
             {isGuideRegister && step === 2 && (
               <Btn type="button" variant="outline" onClick={() => { setStep(1); setError(""); }}>← Back</Btn>
             )}
-            <Btn full type="submit" variant="primary" size="lg">
-              {isLogin ? "Sign In" :
+            <Btn full type="submit" variant="primary" size="lg" disabled={loading}>
+              {loading ? "Please wait…" :
+               isLogin ? "Sign In" :
                isGuideRegister && step === 1 ? "Next: Guide Profile →" :
-               "Create Guide Account"}
+               "Create Account"}
             </Btn>
           </div>
         </form>
 
         <p className="text-center text-sm text-slate-500 mt-6">
           {isLogin ? "Don't have an account? " : "Already have an account? "}
-          <button onClick={() => { onSwitch(); setStep(1); setError(""); }} className="text-blue-700 font-semibold hover:underline">
+          <button onClick={() => { onSwitch(); setStep(1); setError(""); }}
+            className="text-blue-700 font-semibold hover:underline">
             {isLogin ? "Sign up" : "Sign in"}
           </button>
         </p>
@@ -717,17 +888,96 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch }) {
 // ── Guide Dashboard ────────────────────────────────────────────────────────
 function GuideDashboard({ user, onNav }) {
   const [tab, setTab] = useState("profile");
+
+  // Profile form state
   const [form, setForm] = useState({
-    description: "", licenseNumber: "", yearsExperience: "", photoUrl: "",
+    description: "", licenseNumber: "", yearsExperience: "",
+    photoFile: null, photoPreview: null,
     languages: [], destinations: [],
   });
-  const [saved, setSaved] = useState(false);
-  const set = k => v => setForm(p => ({ ...p, [k]: v }));
+  const [profileStatus, setProfileStatus]   = useState("PENDING");
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [saved, setSaved]                   = useState(false);
+  const [saveError, setSaveError]           = useState("");
+  const [saving, setSaving]                 = useState(false);
+
+  // Bookings + messages
+  const [bookings, setBookings]   = useState([]);
+  const [partners, setPartners]   = useState([]);
+  const [dataLoading, setDataLoading] = useState(false);
+
+  const setF = k => v => setForm(p => ({ ...p, [k]: v }));
   const toggleItem = (key, val) => setForm(p => ({
-    ...p, [key]: p[key].includes(val) ? p[key].filter(i => i !== val) : [...p[key], val]
+    ...p, [key]: p[key].includes(val) ? p[key].filter(i => i !== val) : [...p[key], val],
   }));
 
-  const save = () => { setSaved(true); setTimeout(() => setSaved(false), 2500); };
+  // Load guide profile from DB on mount
+  useEffect(() => {
+    if (!user.guideProfileId) { setProfileLoading(false); return; }
+    api.getGuide(user.guideProfileId)
+      .then(g => {
+        setForm({
+          description:    g.description    || "",
+          licenseNumber:  g.licenseNumber  || "",
+          yearsExperience: g.yearsExperience != null ? String(g.yearsExperience) : "",
+          photoFile:   null,
+          photoPreview: g.photoUrl || null,
+          languages:   g.languages    || [],
+          destinations: g.destinations || [],
+        });
+        setProfileStatus(g.status || "PENDING");
+      })
+      .catch(() => {})
+      .finally(() => setProfileLoading(false));
+  }, [user.guideProfileId]);
+
+  // Load bookings / messages when tab changes
+  useEffect(() => {
+    if (tab === "bookings") {
+      setDataLoading(true);
+      api.getMyBookings().then(setBookings).catch(() => {}).finally(() => setDataLoading(false));
+    } else if (tab === "messages") {
+      setDataLoading(true);
+      api.getChatPartners().then(setPartners).catch(() => {}).finally(() => setDataLoading(false));
+    }
+  }, [tab]);
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => setForm(p => ({ ...p, photoFile: file, photoPreview: reader.result }));
+    reader.readAsDataURL(file);
+  };
+
+  const save = async () => {
+    setSaveError("");
+    if (!form.description.trim())      { setSaveError("Description is required."); return; }
+    if (form.languages.length === 0)   { setSaveError("Please select at least one language."); return; }
+    if (form.destinations.length === 0){ setSaveError("Please select at least one destination."); return; }
+
+    setSaving(true);
+    try {
+      const expRaw = String(form.yearsExperience).replace("+", "").trim();
+      await api.upsertGuideProfile({
+        description:    form.description,
+        licenseNumber:  form.licenseNumber || null,
+        yearsExperience: expRaw ? parseInt(expRaw, 10) : null,
+        languages:      form.languages,
+        destinations:   form.destinations,
+      });
+      if (form.photoFile) {
+        const url = await api.uploadGuidePhoto(form.photoFile);
+        setForm(p => ({ ...p, photoPreview: url, photoFile: null }));
+      }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      setSaveError(err.message || "Failed to save profile.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
@@ -736,106 +986,154 @@ function GuideDashboard({ user, onNav }) {
           <h1 className="text-2xl font-black text-blue-950">Guide Dashboard</h1>
           <p className="text-slate-500">Welcome back, {user.fullName}</p>
         </div>
-        <Badge color="amber">⏳ Pending Approval</Badge>
+        <Badge color={profileStatus === "APPROVED" ? "emerald" : "amber"}>
+          {profileStatus === "APPROVED" ? "✓ Approved" : "⏳ Pending Approval"}
+        </Badge>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-2 bg-slate-100 rounded-xl p-1 mb-8 w-fit">
-        {[["profile","Profile"], ["bookings","Bookings"], ["messages","Messages"]].map(([k, label]) => (
+        {[["profile","Profile"],["bookings","Bookings"],["messages","Messages"]].map(([k, label]) => (
           <button key={k} onClick={() => setTab(k)}
-            className={`px-5 py-2 text-sm font-semibold rounded-lg transition ${tab === k ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+            className={`px-5 py-2 text-sm font-semibold rounded-lg transition
+              ${tab === k ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
             {label}
           </button>
         ))}
       </div>
 
+      {/* ── Profile Tab ── */}
       {tab === "profile" && (
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 bg-white rounded-3xl p-7 shadow-sm border border-slate-100 space-y-5">
-            <h2 className="font-bold text-blue-950 text-lg">Profile Information</h2>
-            <Textarea label="Description" value={form.description} onChange={set("description")}
-              placeholder="Describe your experience and specialties..." rows={4} />
-            <div className="grid grid-cols-2 gap-4">
-              <Input label="License Number" value={form.licenseNumber} onChange={set("licenseNumber")} placeholder="SLG-0000" />
-              <Input label="Years of Experience" type="number" value={form.yearsExperience} onChange={set("yearsExperience")} placeholder="5" />
-            </div>
-            <Input label="Photo URL" value={form.photoUrl} onChange={set("photoUrl")} placeholder="https://..." />
-            <div>
-              <label className="text-sm font-semibold text-slate-700 block mb-2">Languages</label>
-              <div className="flex flex-wrap gap-2">
-                {LANGUAGES.map(l => (
-                  <button key={l} onClick={() => toggleItem("languages", l)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition ${form.languages.includes(l) ? "bg-emerald-500 text-white border-emerald-500" : "border-slate-200 text-slate-600 hover:border-emerald-400"}`}>
-                    {l}
-                  </button>
-                ))}
+        profileLoading ? <Spinner /> : (
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="md:col-span-2 bg-white rounded-3xl p-7 shadow-sm border border-slate-100 space-y-5">
+              <h2 className="font-bold text-blue-950 text-lg">Profile Information</h2>
+
+              {/* Photo upload */}
+              <div>
+                <label className="text-sm font-semibold text-slate-700 block mb-2">Profile Photo</label>
+                <div className="flex items-center gap-4">
+                  <div className="w-20 h-20 rounded-2xl bg-slate-100 border-2 border-dashed border-slate-300 overflow-hidden flex items-center justify-center shrink-0">
+                    {form.photoPreview
+                      ? <img src={form.photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                      : <Avatar name={user.fullName} size={60} />}
+                  </div>
+                  <label className="cursor-pointer inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm px-4 py-2.5 rounded-xl transition">
+                    <span>📂</span> Change Photo
+                    <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
+                  </label>
+                </div>
               </div>
-            </div>
-            <div>
-              <label className="text-sm font-semibold text-slate-700 block mb-2">Destinations</label>
-              <div className="flex flex-wrap gap-2">
-                {DESTINATIONS.map(d => (
-                  <button key={d} onClick={() => toggleItem("destinations", d)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition ${form.destinations.includes(d) ? "bg-blue-600 text-white border-blue-600" : "border-slate-200 text-slate-600 hover:border-blue-400"}`}>
-                    {d}
-                  </button>
-                ))}
+
+              <Textarea label="Description *" value={form.description} onChange={setF("description")}
+                placeholder="Describe your experience and specialties..." rows={4} />
+
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="License Number" value={form.licenseNumber} onChange={setF("licenseNumber")} placeholder="SLG-0000" />
+                <Input label="Years of Experience" type="number" value={form.yearsExperience} onChange={setF("yearsExperience")} placeholder="5" />
               </div>
+
+              <div>
+                <label className="text-sm font-semibold text-slate-700 block mb-2">Languages *</label>
+                <div className="flex flex-wrap gap-2">
+                  {LANGUAGES.map(l => (
+                    <button key={l} onClick={() => toggleItem("languages", l)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition
+                        ${form.languages.includes(l) ? "bg-emerald-500 text-white border-emerald-500" : "border-slate-200 text-slate-600 hover:border-emerald-400"}`}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold text-slate-700 block mb-2">Destinations *</label>
+                <div className="flex flex-wrap gap-2">
+                  {DESTINATIONS.map(d => (
+                    <button key={d} onClick={() => toggleItem("destinations", d)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition
+                        ${form.destinations.includes(d) ? "bg-blue-600 text-white border-blue-600" : "border-slate-200 text-slate-600 hover:border-blue-400"}`}>
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {saveError && <p className="text-red-500 text-sm bg-red-50 rounded-xl px-4 py-2">{saveError}</p>}
+              {saved && <p className="text-emerald-600 text-sm font-medium bg-emerald-50 rounded-xl px-4 py-2">✓ Profile saved successfully!</p>}
+              <Btn variant="primary" full onClick={save} disabled={saving}>
+                {saving ? "Saving…" : "Save Profile"}
+              </Btn>
             </div>
-            {saved && <p className="text-emerald-600 text-sm font-medium bg-emerald-50 rounded-xl px-4 py-2">✓ Profile saved successfully!</p>}
-            <Btn variant="primary" full onClick={save}>Save Profile</Btn>
+
+            <div className="space-y-5">
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 text-center">
+                <div className="mx-auto mb-3 w-20 h-20 rounded-full overflow-hidden">
+                  {form.photoPreview
+                    ? <img src={form.photoPreview} alt={user.fullName} className="w-full h-full object-cover" />
+                    : <Avatar name={user.fullName} size={80} />}
+                </div>
+                <p className="font-bold text-blue-950">{user.fullName}</p>
+                <p className="text-sm text-slate-500">{user.email}</p>
+              </div>
+              {profileStatus !== "APPROVED" && (
+                <div className="bg-amber-50 rounded-3xl p-5 border border-amber-100">
+                  <p className="text-amber-800 text-sm font-semibold mb-2">⏳ Awaiting Approval</p>
+                  <p className="text-amber-700 text-xs">Your profile is under review. You'll be notified once approved.</p>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="space-y-5">
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 text-center">
-              <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-blue-600 to-emerald-400 flex items-center justify-center text-white text-3xl font-black mb-3">
-                {user.fullName?.[0]}
-              </div>
-              <p className="font-bold text-blue-950">{user.fullName}</p>
-              <p className="text-sm text-slate-500">{user.email}</p>
-            </div>
-            <div className="bg-amber-50 rounded-3xl p-5 border border-amber-100">
-              <p className="text-amber-800 text-sm font-semibold mb-2">⏳ Awaiting Approval</p>
-              <p className="text-amber-700 text-xs">Your profile is under review. You'll be notified once approved.</p>
-            </div>
-          </div>
-        </div>
+        )
       )}
 
+      {/* ── Bookings Tab ── */}
       {tab === "bookings" && (
         <div className="bg-white rounded-3xl p-7 shadow-sm border border-slate-100">
           <h2 className="font-bold text-blue-950 text-lg mb-5">Your Bookings</h2>
-          <div className="space-y-4">
-            {[{ tourist: "Emma Rodriguez", date: "2026-06-15", people: 2, dest: "Sigiriya", status: "CONFIRMED", amount: 70 },
-              { tourist: "James Wilson", date: "2026-06-22", people: 3, dest: "Kandy", status: "PENDING", amount: 105 }].map((b, i) => (
-              <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
-                <div>
-                  <p className="font-semibold text-blue-950">{b.tourist}</p>
-                  <p className="text-sm text-slate-500">📅 {b.date} · 👥 {b.people} people · 📍 {b.dest}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-blue-950">${b.amount}</p>
-                  <Badge color={b.status === "CONFIRMED" ? "emerald" : "amber"}>{b.status}</Badge>
-                </div>
+          {dataLoading ? <Spinner /> : bookings.length === 0
+            ? <p className="text-slate-400 text-sm">No bookings yet.</p>
+            : (
+              <div className="space-y-4">
+                {bookings.map(b => (
+                  <div key={b.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                    <div>
+                      <p className="font-semibold text-blue-950">{b.touristName || b.guideName}</p>
+                      <p className="text-sm text-slate-500">
+                        📅 {b.tourDate} · 👥 {b.numberOfPeople} people{b.destination ? ` · 📍 ${b.destination}` : ""}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-blue-950">${b.totalAmount}</p>
+                      <Badge color={b.status === "CONFIRMED" ? "emerald" : b.status === "CANCELLED" ? "slate" : "amber"}>
+                        {b.status}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
         </div>
       )}
 
+      {/* ── Messages Tab ── */}
       {tab === "messages" && (
         <div className="bg-white rounded-3xl p-7 shadow-sm border border-slate-100">
           <h2 className="font-bold text-blue-950 text-lg mb-5">Messages</h2>
-          {[{ name: "Emma R.", msg: "What time do we start?", time: "2h ago" },
-            { name: "James W.", msg: "Can we add Dambulla to the itinerary?", time: "Yesterday" }].map((m, i) => (
-            <div key={i} className="flex items-center gap-4 p-4 hover:bg-slate-50 rounded-2xl cursor-pointer transition" onClick={() => onNav("chat", { id: i+10, fullName: m.name })}>
-              <Avatar name={m.name} size={44} />
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-blue-950">{m.name}</p>
-                <p className="text-sm text-slate-500 truncate">{m.msg}</p>
-              </div>
-              <span className="text-xs text-slate-400">{m.time}</span>
-            </div>
-          ))}
+          {dataLoading ? <Spinner /> : partners.length === 0
+            ? <p className="text-slate-400 text-sm">No conversations yet.</p>
+            : partners.map(p => (
+                <div key={p.id}
+                  className="flex items-center gap-4 p-4 hover:bg-slate-50 rounded-2xl cursor-pointer transition"
+                  onClick={() => onNav("chat", { userId: p.id, fullName: p.fullName })}>
+                  <Avatar name={p.fullName} size={44} />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-blue-950">{p.fullName}</p>
+                    <p className="text-sm text-slate-500">Tap to open conversation</p>
+                  </div>
+                  <span className="text-slate-400 text-lg">›</span>
+                </div>
+              ))}
         </div>
       )}
     </div>
@@ -844,25 +1142,43 @@ function GuideDashboard({ user, onNav }) {
 
 // ── Chat Page ──────────────────────────────────────────────────────────────
 function ChatPage({ user, guide, onBack }) {
-  const [messages, setMessages] = useState([
-    { id: 1, from: "guide", text: "Hello! I'm excited to show you Sri Lanka. Do you have any specific interests?" },
-    { id: 2, from: "tourist", text: "Hi! I love ancient temples and local food. Can you arrange both?" },
-    { id: 3, from: "guide", text: "Absolutely! I'll plan a full day at Dambulla cave temples followed by a local rice & curry lunch." },
-  ]);
-  const [input, setInput] = useState("");
+  const [messages, setMessages]             = useState([]);
+  const [input, setInput]                   = useState("");
   const [locationShared, setLocationShared] = useState(false);
-  const endRef = useRef(null);
+  const [loading, setLoading]               = useState(true);
+  const endRef  = useRef(null);
+  const pollRef = useRef(null);
 
-  const send = () => {
-    if (!input.trim()) return;
-    setMessages(p => [...p, { id: Date.now(), from: "tourist", text: input }]);
-    setInput("");
-    setTimeout(() => {
-      setMessages(p => [...p, { id: Date.now() + 1, from: "guide", text: "Thanks for your message! I'll get back to you shortly." }]);
-    }, 1200);
+  // partnerId is guide.userId (the user-ID of the person we're chatting with)
+  const partnerId = guide?.userId;
+
+  const loadMessages = async () => {
+    if (!partnerId) return;
+    try {
+      const data = await api.getConversation(partnerId);
+      setMessages(data);
+    } catch { /* silent */ }
   };
 
+  useEffect(() => {
+    if (!partnerId) { setLoading(false); return; }
+    loadMessages().then(() => setLoading(false));
+    // Poll every 5 s for new messages
+    pollRef.current = setInterval(loadMessages, 5000);
+    return () => clearInterval(pollRef.current);
+  }, [partnerId]);
+
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  const send = async () => {
+    if (!input.trim() || !partnerId) return;
+    const text = input;
+    setInput("");
+    try {
+      const msg = await api.sendMessage(partnerId, text);
+      setMessages(p => [...p, msg]);
+    } catch { /* silent */ }
+  };
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 flex flex-col h-screen max-h-screen">
@@ -903,16 +1219,23 @@ function ChatPage({ user, guide, onBack }) {
         </div>
       )}
 
-      {/* Messages */}
+      {/* Messages from DB */}
       <div className="flex-1 overflow-y-auto space-y-4 pb-4 pr-1" style={{ minHeight: 0 }}>
+        {loading && <Spinner />}
+        {!loading && messages.length === 0 && (
+          <p className="text-center text-slate-400 text-sm py-8">No messages yet. Say hi! 👋</p>
+        )}
         {messages.map(m => {
-          const isMe = m.from === "tourist";
+          const isMe = m.senderId === user?.id;
           return (
             <motion.div key={m.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               className={`flex ${isMe ? "justify-end" : "justify-start"} gap-3 items-end`}>
-              {!isMe && <Avatar name={guide?.fullName || "G"} size={32} />}
-              <div className={`max-w-xs lg:max-w-md rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${isMe ? "bg-blue-700 text-white rounded-br-sm" : "bg-white text-slate-800 border border-slate-100 rounded-bl-sm"}`}>
-                {m.text}
+              {!isMe && <Avatar name={guide?.fullName || "G"} photo={guide?.photoUrl} size={32} />}
+              <div className={`max-w-xs lg:max-w-md rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm
+                ${isMe
+                  ? "bg-blue-700 text-white rounded-br-sm"
+                  : "bg-white text-slate-800 border border-slate-100 rounded-bl-sm"}`}>
+                {m.content}
               </div>
               {isMe && <Avatar name={user?.fullName || "You"} size={32} />}
             </motion.div>
@@ -927,12 +1250,10 @@ function ChatPage({ user, guide, onBack }) {
           <div className="flex-1 bg-white border border-slate-200 rounded-2xl px-4 py-3 flex items-center gap-2">
             <input value={input} onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())}
-              placeholder="Type a message..."
+              placeholder="Type a message…"
               className="flex-1 text-sm focus:outline-none bg-transparent" />
           </div>
-          <Btn variant="primary" onClick={send} disabled={!input.trim()}>
-            Send →
-          </Btn>
+          <Btn variant="primary" onClick={send} disabled={!input.trim()}>Send →</Btn>
         </div>
       </div>
     </div>
@@ -942,13 +1263,21 @@ function ChatPage({ user, guide, onBack }) {
 // ── Payment Page ───────────────────────────────────────────────────────────
 function PaymentPage({ booking, onBack, onComplete }) {
   const [method, setMethod] = useState("card");
-  const [card, setCard] = useState({ number: "", expiry: "", cvv: "", name: "" });
-  const [paid, setPaid] = useState(false);
-  const set = k => v => setCard(p => ({ ...p, [k]: v }));
+  const [card, setCard]     = useState({ number: "", expiry: "", cvv: "", name: "" });
+  const [paid, setPaid]     = useState(false);
+  const [paying, setPaying] = useState(false);
+  const setC = k => v => setCard(p => ({ ...p, [k]: v }));
 
-  const pay = (e) => {
+  const pay = async (e) => {
     e.preventDefault();
+    setPaying(true);
+    try {
+      if (booking?.bookingId) {
+        await api.confirmPayment(booking.bookingId);
+      }
+    } catch { /* show success regardless for demo */ }
     setPaid(true);
+    setPaying(false);
   };
 
   if (paid) return (
@@ -972,21 +1301,22 @@ function PaymentPage({ booking, onBack, onComplete }) {
       <h1 className="text-2xl font-black text-blue-950 mb-2">Secure Payment</h1>
       <p className="text-slate-500 text-sm mb-8">Complete your booking with {booking?.guide?.fullName || "your guide"}</p>
 
-      {/* Order summary */}
+      {/* Summary */}
       <div className="bg-slate-50 rounded-2xl p-5 mb-6">
         <h3 className="font-bold text-blue-950 mb-3">Booking Summary</h3>
         <div className="space-y-1.5 text-sm">
           <div className="flex justify-between text-slate-600"><span>Tour with {booking?.guide?.fullName || "guide"}</span><span>$35/person</span></div>
-          <div className="flex justify-between text-slate-600"><span>× {booking?.people || 1} people</span><span>${(booking?.total || 35)}</span></div>
+          <div className="flex justify-between text-slate-600"><span>× {booking?.people || 1} people</span><span>${booking?.total || 35}</span></div>
           <div className="flex justify-between font-bold text-blue-950 border-t pt-2 mt-2"><span>Total</span><span>${booking?.total || 35}</span></div>
         </div>
       </div>
 
       {/* Payment methods */}
       <div className="flex gap-2 mb-6">
-        {[["card","💳 Credit Card"], ["paypal","🔵 PayPal"], ["bank","🏦 Bank Transfer"]].map(([m, label]) => (
+        {[["card","💳 Credit Card"],["paypal","🔵 PayPal"],["bank","🏦 Bank Transfer"]].map(([m, label]) => (
           <button key={m} onClick={() => setMethod(m)}
-            className={`flex-1 py-2.5 text-xs font-semibold rounded-xl border transition ${method === m ? "bg-blue-700 text-white border-blue-700" : "border-slate-200 text-slate-600 hover:border-blue-300"}`}>
+            className={`flex-1 py-2.5 text-xs font-semibold rounded-xl border transition
+              ${method === m ? "bg-blue-700 text-white border-blue-700" : "border-slate-200 text-slate-600 hover:border-blue-300"}`}>
             {label}
           </button>
         ))}
@@ -994,22 +1324,24 @@ function PaymentPage({ booking, onBack, onComplete }) {
 
       {method === "card" && (
         <form onSubmit={pay} className="space-y-4">
-          <Input label="Card Number" value={card.number} onChange={set("number")} placeholder="1234 5678 9012 3456" required />
+          <Input label="Card Number" value={card.number} onChange={setC("number")} placeholder="1234 5678 9012 3456" required />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Expiry" value={card.expiry} onChange={set("expiry")} placeholder="MM/YY" required />
-            <Input label="CVV" value={card.cvv} onChange={set("cvv")} placeholder="123" required />
+            <Input label="Expiry" value={card.expiry} onChange={setC("expiry")} placeholder="MM/YY" required />
+            <Input label="CVV"    value={card.cvv}    onChange={setC("cvv")}    placeholder="123"   required />
           </div>
-          <Input label="Name on Card" value={card.name} onChange={set("name")} placeholder="Full name" required />
+          <Input label="Name on Card" value={card.name} onChange={setC("name")} placeholder="Full name" required />
           <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 p-3 rounded-xl">
             <span>🔒</span> Your payment is encrypted and secure. SSL protected.
           </div>
-          <Btn full type="submit" variant="emerald" size="lg">Pay ${booking?.total || 35} Now</Btn>
+          <Btn full type="submit" variant="emerald" size="lg" disabled={paying}>
+            {paying ? "Processing…" : `Pay $${booking?.total || 35} Now`}
+          </Btn>
         </form>
       )}
       {method === "paypal" && (
         <div className="text-center py-8">
           <p className="text-slate-500 mb-6">You'll be redirected to PayPal to complete payment.</p>
-          <Btn full variant="primary" onClick={() => setPaid(true)}>Continue to PayPal →</Btn>
+          <Btn full variant="primary" onClick={async () => { await pay({ preventDefault: () => {} }); }}>Continue to PayPal →</Btn>
         </div>
       )}
       {method === "bank" && (
@@ -1017,15 +1349,18 @@ function PaymentPage({ booking, onBack, onComplete }) {
           <p className="font-bold text-blue-950 mb-3">Bank Transfer Details</p>
           <div className="flex justify-between"><span className="text-slate-500">Bank</span><span className="font-semibold">Commercial Bank of Ceylon</span></div>
           <div className="flex justify-between"><span className="text-slate-500">Account</span><span className="font-semibold">8001-2345-6789</span></div>
-          <div className="flex justify-between"><span className="text-slate-500">Reference</span><span className="font-semibold text-blue-600">XPL-{Date.now().toString().slice(-6)}</span></div>
-          <Btn full variant="primary" className="mt-4" onClick={() => setPaid(true)}>I've Completed the Transfer</Btn>
+          <div className="flex justify-between"><span className="text-slate-500">Reference</span><span className="font-semibold text-blue-600">XPL-{booking?.bookingId || "000000"}</span></div>
+          <Btn full variant="primary" className="mt-4"
+            onClick={async () => { await pay({ preventDefault: () => {} }); }}>
+            I've Completed the Transfer
+          </Btn>
         </div>
       )}
     </div>
   );
 }
 
-// ── Privacy Policy ─────────────────────────────────────────────────────────
+// ── Privacy Page ───────────────────────────────────────────────────────────
 function PrivacyPage({ onBack }) {
   return (
     <div className="max-w-3xl mx-auto px-6 py-12">
@@ -1033,7 +1368,6 @@ function PrivacyPage({ onBack }) {
       <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 prose prose-slate max-w-none">
         <h1 className="text-3xl font-black text-blue-950 mb-2">Privacy Policy</h1>
         <p className="text-slate-500 text-sm mb-8">Last updated: January 2026</p>
-
         {[
           { title: "1. Information We Collect", content: "We collect information you provide directly: name, email address, profile photo, tour guide licence number, and payment details for bookings. We also collect usage data such as pages visited, searches performed, and interactions with guide profiles to improve our service." },
           { title: "2. How We Use Your Information", content: "We use your information to facilitate connections between tourists and tour guides, process bookings and payments, send booking confirmations and notifications, improve the Xplorica LK platform, comply with applicable laws and regulations, and verify tour guide identity and licence credentials." },
@@ -1064,7 +1398,7 @@ function Navbar({ user, page, onNav, onLogin, onLogout }) {
     <nav className="fixed top-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-100">
       <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
         <button onClick={() => onNav("home")} className="flex items-center gap-2">
-          <div className="w-9 h-9 bg-gradient-to-br from-blue-700 to-emerald-500 rounded-xl flex items-center justify-center text-white font-black text-lg shadow">X</div>
+          <div className="w-9 h-9 bg-linear-to-br from-blue-700 to-emerald-500 rounded-xl flex items-center justify-center text-white font-black text-lg shadow">X</div>
           <div>
             <p className="text-sm font-black text-blue-950 leading-none">Xplorica LK</p>
             <p className="text-xs text-emerald-700 leading-none">Explore Sri Lanka</p>
@@ -1072,9 +1406,11 @@ function Navbar({ user, page, onNav, onLogin, onLogout }) {
         </button>
 
         <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
-          <button onClick={() => onNav("browse")} className={`hover:text-blue-700 transition ${page==="browse"?"text-blue-700":""}`}>Find Guides</button>
+          <button onClick={() => onNav("browse")} className={`hover:text-blue-700 transition ${page === "browse" ? "text-blue-700" : ""}`}>Find Guides</button>
           <button onClick={() => onNav("privacy")} className="hover:text-blue-700 transition">Privacy</button>
-          {user?.role === "GUIDE" && <button onClick={() => onNav("dashboard")} className={`hover:text-blue-700 transition ${page==="dashboard"?"text-blue-700":""}`}>Dashboard</button>}
+          {user?.role === "GUIDE" && (
+            <button onClick={() => onNav("dashboard")} className={`hover:text-blue-700 transition ${page === "dashboard" ? "text-blue-700" : ""}`}>Dashboard</button>
+          )}
         </div>
 
         <div className="hidden md:flex items-center gap-3">
@@ -1087,7 +1423,7 @@ function Navbar({ user, page, onNav, onLogin, onLogout }) {
                 <Btn variant="ghost" size="sm" onClick={onLogout}>Sign out</Btn>
               </>
             : <>
-                <Btn variant="ghost" size="sm" onClick={() => onLogin("login")}>Sign in</Btn>
+                <Btn variant="ghost"   size="sm" onClick={() => onLogin("login")}>Sign in</Btn>
                 <Btn variant="primary" size="sm" onClick={() => onLogin("register")}>Sign up</Btn>
               </>}
         </div>
@@ -1100,8 +1436,10 @@ function Navbar({ user, page, onNav, onLogin, onLogout }) {
           <button onClick={() => { onNav("browse"); setMobileOpen(false); }} className="block w-full text-left py-2 text-sm font-medium text-slate-700">Find Guides</button>
           <button onClick={() => { onNav("privacy"); setMobileOpen(false); }} className="block w-full text-left py-2 text-sm font-medium text-slate-700">Privacy Policy</button>
           {!user
-            ? <><Btn full variant="outline" onClick={() => { onLogin("login"); setMobileOpen(false); }}>Sign in</Btn>
-                <Btn full variant="primary" onClick={() => { onLogin("register"); setMobileOpen(false); }}>Sign up</Btn></>
+            ? <>
+                <Btn full variant="outline" onClick={() => { onLogin("login");    setMobileOpen(false); }}>Sign in</Btn>
+                <Btn full variant="primary" onClick={() => { onLogin("register"); setMobileOpen(false); }}>Sign up</Btn>
+              </>
             : <Btn full variant="ghost" onClick={() => { onLogout(); setMobileOpen(false); }}>Sign out</Btn>}
         </div>
       )}
@@ -1123,8 +1461,8 @@ function Footer({ onNav }) {
         <div>
           <h4 className="font-bold text-white mb-3">Navigate</h4>
           <div className="space-y-2 text-sm">
-            <button onClick={() => onNav("browse")} className="block hover:text-white transition">Find Guides</button>
-            <button onClick={() => onNav("home")} className="block hover:text-white transition">Home</button>
+            <button onClick={() => onNav("browse")}  className="block hover:text-white transition">Find Guides</button>
+            <button onClick={() => onNav("home")}    className="block hover:text-white transition">Home</button>
             <button onClick={() => onNav("privacy")} className="block hover:text-white transition">Privacy Policy</button>
           </div>
         </div>
@@ -1151,22 +1489,34 @@ function Footer({ onNav }) {
 // ROOT APP
 // ══════════════════════════════════════════════════════════════════════════
 export default function App() {
-  const [page, setPage] = useState("home");
-  const [user, setUser] = useState(null);
-  const [authMode, setAuthMode] = useState(null);     // "login" | "register"
-  const [defaultRole, setDefaultRole] = useState("TOURIST");
+  const [page, setPage]                   = useState("home");
+  const [user, setUser]                   = useState(null);
+  const [authMode, setAuthMode]           = useState(null);   // "login" | "register"
+  const [defaultRole, setDefaultRole]     = useState("TOURIST");
   const [selectedGuide, setSelectedGuide] = useState(null);
-  const [chatPartner, setChatPartner] = useState(null);
+  const [chatPartner, setChatPartner]     = useState(null);
   const [pendingBooking, setPendingBooking] = useState(null);
+
+  // Restore session from localStorage on first load
+  useEffect(() => {
+    const token  = api.getToken();
+    const stored = api.loadUser();
+    if (token && stored) setUser(stored);
+  }, []);
 
   const nav = (p, data) => {
     setPage(p);
     if (p === "guide") setSelectedGuide(data);
-    if (p === "chat") setChatPartner(data);
+    if (p === "chat")  setChatPartner(data);
   };
 
-  const login = (mode, role) => { setAuthMode(mode); setDefaultRole(role || "TOURIST"); setPage("auth"); };
-  const logout = () => { setUser(null); setPage("home"); };
+  const login  = (mode, role) => { setAuthMode(mode); setDefaultRole(role || "TOURIST"); setPage("auth"); };
+  const logout = () => {
+    setUser(null);
+    api.clearToken();
+    api.clearUser();
+    setPage("home");
+  };
 
   const authSuccess = (u) => {
     setUser(u);
@@ -1174,24 +1524,18 @@ export default function App() {
     setPage(u.role === "GUIDE" ? "dashboard" : "home");
   };
 
-  const needsAuth = (action) => {
-    if (!user) { login("login"); return false; }
-    action();
-    return true;
-  };
-
   const showFooter = !["auth", "chat", "payment"].includes(page);
-  const showNav = page !== "auth";
+  const showNav    = page !== "auth";
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
       {showNav && (
-        <Navbar user={user} page={page} onNav={nav}
-          onLogin={login} onLogout={logout} />
+        <Navbar user={user} page={page} onNav={nav} onLogin={login} onLogout={logout} />
       )}
 
       <div className={showNav ? "pt-16" : ""}>
         <AnimatePresence mode="wait">
+
           {page === "auth" && (
             <motion.div key="auth" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <AuthPage mode={authMode} defaultRole={defaultRole}
@@ -1248,6 +1592,7 @@ export default function App() {
               <PrivacyPage onBack={() => nav("home")} />
             </motion.div>
           )}
+
         </AnimatePresence>
       </div>
 
