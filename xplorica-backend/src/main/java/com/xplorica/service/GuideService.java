@@ -58,7 +58,7 @@ public class GuideService {
         profile.setYearsExperience(req.getYearsExperience());
         profile.setLanguages(req.getLanguages());
         profile.setDestinations(req.getDestinations());
-        if (profile.getStatus() == null) profile.setStatus(GuideProfile.Status.PENDING);
+        if (profile.getStatus() == null) profile.setStatus(GuideProfile.Status.APPROVED);
 
         return GuideProfileResponse.from(guideRepo.save(profile));
     }

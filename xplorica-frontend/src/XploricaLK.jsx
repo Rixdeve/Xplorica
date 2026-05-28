@@ -637,7 +637,7 @@ function GuideDetailPage({ guide, user, onBack, onChat, onBook }) {
 }
 
 // ── Auth Page ─────────────────────────────────────────────────────────────
-function AuthPage({ mode, defaultRole, onSuccess, onSwitch }) {
+function AuthPage({ mode, defaultRole, onSuccess, onSwitch, onClose }) {
   const isLogin = mode === "login";
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
@@ -746,7 +746,16 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-950 via-blue-900 to-emerald-900 p-4 py-12">
       <motion.div key={step} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-8">
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-8 relative">
+
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition font-bold text-xl"
+          type="button"
+          aria-label="Close">
+          ×
+        </button>
 
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-14 h-14 bg-linear-to-br from-blue-700 to-emerald-500 rounded-2xl text-white text-2xl font-black shadow-lg mb-4">X</div>
@@ -942,6 +951,15 @@ function GuideDashboard({ user, onNav }) {
     }
   }, [tab]);
 
+  // Auto-refresh messages every 5 seconds when on messages tab
+  useEffect(() => {
+    if (tab !== "messages") return;
+    const interval = setInterval(() => {
+      api.getChatPartners().then(setPartners).catch(() => {});
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [tab]);
+
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -1096,19 +1114,73 @@ function GuideDashboard({ user, onNav }) {
             : (
               <div className="space-y-4">
                 {bookings.map(b => (
-                  <div key={b.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
-                    <div>
-                      <p className="font-semibold text-blue-950">{b.touristName || b.guideName}</p>
-                      <p className="text-sm text-slate-500">
-                        📅 {b.tourDate} · 👥 {b.numberOfPeople} people{b.destination ? ` · 📍 ${b.destination}` : ""}
-                      </p>
+                  <div key={b.id} className="p-4 bg-slate-50 rounded-2xl">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className="font-semibold text-blue-950">{b.touristName || b.guideName}</p>
+                        <p className="text-sm text-slate-500">
+                          📅 {b.tourDate} · 👥 {b.numberOfPeople} people{b.destination ? ` · 📍 ${b.destination}` : ""}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-blue-950">${b.totalAmount}</p>
+                        <Badge color={b.status === "CONFIRMED" ? "emerald" : b.status === "CANCELLED" ? "slate" : "amber"}>
+                          {b.status}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-blue-950">${b.totalAmount}</p>
-                      <Badge color={b.status === "CONFIRMED" ? "emerald" : b.status === "CANCELLED" ? "slate" : "amber"}>
-                        {b.status}
-                      </Badge>
-                    </div>
+                    {/* Status Actions */}
+                    {b.status !== "CANCELLED" && b.status !== "COMPLETED" && (
+                      <div className="flex gap-2 pt-3 border-t border-slate-200">
+                        {b.status === "PENDING" && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                await api.updateBookingStatus(b.id, "CONFIRMED");
+                                setBookings(prev => prev.map(item => 
+                                  item.id === b.id ? { ...item, status: "CONFIRMED" } : item
+                                ));
+                              } catch (err) {
+                                alert("Failed to confirm booking: " + err.message);
+                              }
+                            }}
+                            className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold py-2 px-3 rounded-xl transition">
+                            ✓ Confirm
+                          </button>
+                        )}
+                        {b.status === "CONFIRMED" && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                await api.updateBookingStatus(b.id, "COMPLETED");
+                                setBookings(prev => prev.map(item => 
+                                  item.id === b.id ? { ...item, status: "COMPLETED" } : item
+                                ));
+                              } catch (err) {
+                                alert("Failed to mark as completed: " + err.message);
+                              }
+                            }}
+                            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2 px-3 rounded-xl transition">
+                            ✓ Complete
+                          </button>
+                        )}
+                        <button
+                          onClick={async () => {
+                            if (!confirm("Are you sure you want to cancel this booking?")) return;
+                            try {
+                              await api.updateBookingStatus(b.id, "CANCELLED");
+                              setBookings(prev => prev.map(item => 
+                                item.id === b.id ? { ...item, status: "CANCELLED" } : item
+                              ));
+                            } catch (err) {
+                              alert("Failed to cancel booking: " + err.message);
+                            }
+                          }}
+                          className="flex-1 bg-slate-300 hover:bg-slate-400 text-slate-700 text-sm font-semibold py-2 px-3 rounded-xl transition">
+                          ✕ Cancel
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1119,7 +1191,17 @@ function GuideDashboard({ user, onNav }) {
       {/* ── Messages Tab ── */}
       {tab === "messages" && (
         <div className="bg-white rounded-3xl p-7 shadow-sm border border-slate-100">
-          <h2 className="font-bold text-blue-950 text-lg mb-5">Messages</h2>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="font-bold text-blue-950 text-lg">Messages</h2>
+            <button
+              onClick={() => {
+                setDataLoading(true);
+                api.getChatPartners().then(setPartners).catch(() => {}).finally(() => setDataLoading(false));
+              }}
+              className="text-sm text-blue-600 hover:text-blue-700 font-semibold">
+              🔄 Refresh
+            </button>
+          </div>
           {dataLoading ? <Spinner /> : partners.length === 0
             ? <p className="text-slate-400 text-sm">No conversations yet.</p>
             : partners.map(p => (
@@ -1136,6 +1218,64 @@ function GuideDashboard({ user, onNav }) {
               ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Messages Page ──────────────────────────────────────────────────────────
+function MessagesPage({ user, onNav }) {
+  const [partners, setPartners] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.getChatPartners().then(setPartners).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  // Auto-refresh every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      api.getChatPartners().then(setPartners).catch(() => {});
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="max-w-3xl mx-auto px-6 py-10">
+      <div className="mb-8">
+        <h1 className="text-2xl font-black text-blue-950">Messages</h1>
+        <p className="text-slate-500">Your conversations</p>
+      </div>
+
+      <div className="bg-white rounded-3xl p-7 shadow-sm border border-slate-100">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="font-bold text-blue-950 text-lg">Conversations</h2>
+          <button
+            onClick={() => {
+              setLoading(true);
+              api.getChatPartners().then(setPartners).catch(() => {}).finally(() => setLoading(false));
+            }}
+            className="text-sm text-blue-600 hover:text-blue-700 font-semibold">
+            🔄 Refresh
+          </button>
+        </div>
+        {loading ? <Spinner /> : partners.length === 0
+          ? <div className="text-center py-8">
+              <p className="text-slate-400 text-sm mb-4">No conversations yet.</p>
+              <Btn variant="primary" onClick={() => onNav("browse")}>Find Guides</Btn>
+            </div>
+          : partners.map(p => (
+              <div key={p.id}
+                className="flex items-center gap-4 p-4 hover:bg-slate-50 rounded-2xl cursor-pointer transition mb-2"
+                onClick={() => onNav("chat", { userId: p.id, fullName: p.fullName })}>
+                <Avatar name={p.fullName} size={44} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-blue-950">{p.fullName}</p>
+                  <p className="text-sm text-slate-500">Tap to open conversation</p>
+                </div>
+                <span className="text-slate-400 text-lg">›</span>
+              </div>
+            ))}
+      </div>
     </div>
   );
 }
@@ -1435,6 +1575,9 @@ function Navbar({ user, page, onNav, onLogin, onLogout }) {
         <div className="md:hidden bg-white border-t border-slate-100 px-4 py-4 space-y-3">
           <button onClick={() => { onNav("browse"); setMobileOpen(false); }} className="block w-full text-left py-2 text-sm font-medium text-slate-700">Find Guides</button>
           <button onClick={() => { onNav("privacy"); setMobileOpen(false); }} className="block w-full text-left py-2 text-sm font-medium text-slate-700">Privacy Policy</button>
+          {user?.role === "GUIDE" && (
+            <button onClick={() => { onNav("dashboard"); setMobileOpen(false); }} className="block w-full text-left py-2 text-sm font-medium text-slate-700">Dashboard</button>
+          )}
           {!user
             ? <>
                 <Btn full variant="outline" onClick={() => { onLogin("login");    setMobileOpen(false); }}>Sign in</Btn>
@@ -1496,6 +1639,7 @@ export default function App() {
   const [selectedGuide, setSelectedGuide] = useState(null);
   const [chatPartner, setChatPartner]     = useState(null);
   const [pendingBooking, setPendingBooking] = useState(null);
+  const [previousPage, setPreviousPage]   = useState("home");
 
   // Restore session from localStorage on first load
   useEffect(() => {
@@ -1505,6 +1649,7 @@ export default function App() {
   }, []);
 
   const nav = (p, data) => {
+    setPreviousPage(page);
     setPage(p);
     if (p === "guide") setSelectedGuide(data);
     if (p === "chat")  setChatPartner(data);
@@ -1540,7 +1685,8 @@ export default function App() {
             <motion.div key="auth" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <AuthPage mode={authMode} defaultRole={defaultRole}
                 onSuccess={authSuccess}
-                onSwitch={() => setAuthMode(m => m === "login" ? "register" : "login")} />
+                onSwitch={() => setAuthMode(m => m === "login" ? "register" : "login")}
+                onClose={() => nav("home")} />
             </motion.div>
           )}
 
@@ -1566,10 +1712,29 @@ export default function App() {
             </motion.div>
           )}
 
+          {page === "messages" && user && (
+            <motion.div key="messages" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <MessagesPage user={user} onNav={nav} />
+            </motion.div>
+          )}
+
           {page === "chat" && (
             <motion.div key="chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <ChatPage user={user} guide={chatPartner}
-                onBack={() => nav(selectedGuide ? "guide" : "browse")} />
+                onBack={() => {
+                  // Go back to where we came from, or dashboard/home as fallback
+                  if (previousPage === "messages") {
+                    nav("messages");
+                  } else if (previousPage === "dashboard") {
+                    nav("dashboard");
+                  } else if (selectedGuide) {
+                    nav("guide", selectedGuide);
+                  } else if (user?.role === "GUIDE") {
+                    nav("dashboard");
+                  } else {
+                    nav("messages");
+                  }
+                }} />
             </motion.div>
           )}
 

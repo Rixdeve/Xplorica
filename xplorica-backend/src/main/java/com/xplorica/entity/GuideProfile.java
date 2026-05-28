@@ -61,7 +61,7 @@ public class GuideProfile {
     protected void init() {
         if (averageRating == null) averageRating = 0.0;
         if (totalRatings == null) totalRatings = 0;
-        if (status == null) status = Status.PENDING;
+        if (status == null) status = Status.APPROVED;
     }
 
     // Recalculate average when a new rating is added
