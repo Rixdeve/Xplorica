@@ -17,5 +17,5 @@ public class GuideProfileRequest {
     private List<String> destinations;
 
     @Positive
-    private Double hourlyRate;
+    private Double dailyRate;
 }

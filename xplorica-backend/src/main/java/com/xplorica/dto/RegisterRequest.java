@@ -16,5 +16,5 @@ public class RegisterRequest {
     private User.Role role;  // TOURIST or GUIDE
 
     @Positive
-    private Double hourlyRate; // required when role = GUIDE
+    private Double dailyRate; // required when role = GUIDE
 }

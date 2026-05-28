@@ -60,7 +60,7 @@ public class GuideService {
         profile.setYearsExperience(req.getYearsExperience());
         profile.setLanguages(req.getLanguages());
         profile.setDestinations(req.getDestinations());
-        if (req.getHourlyRate() != null) profile.setHourlyRate(req.getHourlyRate());
+        if (req.getDailyRate() != null) profile.setDailyRate(req.getDailyRate());
         if (profile.getStatus() == null) profile.setStatus(GuideProfile.Status.APPROVED);
 
         return GuideProfileResponse.from(guideRepo.save(profile));

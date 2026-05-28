@@ -322,6 +322,12 @@ function GuideCard({ guide, onView }) {
           </div>
           <Stars rating={Math.round(guide.averageRating ?? 0)} />
         </div>
+        {guide.dailyRate && (
+          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+            <span className="text-xs text-slate-500">Daily rate</span>
+            <span className="font-bold text-blue-800 text-sm">${guide.dailyRate} <span className="font-normal text-slate-400 text-xs">/ person</span></span>
+          </div>
+        )}
       </div>
     </motion.div>
   );
@@ -479,11 +485,12 @@ function GuideDetailPage({ guide, user, onBack, onChat, onBook }) {
     if (!bookDate) return;
     setBookLoading(true);
     try {
-      const booking = await api.createBooking({
+      const rate = guide.dailyRate || 0;
+    const booking = await api.createBooking({
         guideId:       guide.id,
         tourDate:      bookDate,
         numberOfPeople: bookPeople,
-        totalAmount:   35 * bookPeople,
+        totalAmount:   rate * bookPeople,
         destination:   (guide.destinations || [])[0] || "",
       });
       setBookingId(booking.id);
@@ -619,10 +626,12 @@ function GuideDetailPage({ guide, user, onBack, onChat, onBook }) {
             onChange={v => setBookPeople(Math.max(1, Number(v)))} required />
           <div className="bg-slate-50 rounded-2xl p-4">
             <div className="flex justify-between text-sm text-slate-600 mb-1">
-              <span>Rate per person</span><span>$35</span>
+              <span>Daily rate per person</span>
+              <span>${guide.dailyRate ?? "—"}</span>
             </div>
             <div className="flex justify-between font-bold text-blue-950">
-              <span>Total</span><span>${35 * bookPeople}</span>
+              <span>Total</span>
+              <span>${guide.dailyRate ? guide.dailyRate * bookPeople : "—"}</span>
             </div>
           </div>
           {bookMsg
@@ -636,7 +645,7 @@ function GuideDetailPage({ guide, user, onBack, onChat, onBook }) {
             )}
           {bookMsg && !bookMsg.startsWith("❌") && bookingId && (
             <Btn full variant="primary"
-              onClick={() => onBook({ bookingId, guide, date: bookDate, people: bookPeople, total: 35 * bookPeople })}>
+              onClick={() => onBook({ bookingId, guide, date: bookDate, people: bookPeople, total: (guide.dailyRate || 0) * bookPeople })}>
               Proceed to Payment →
             </Btn>
           )}
@@ -652,7 +661,7 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch, onClose }) {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     email: "", password: "", fullName: "", role: defaultRole || "TOURIST",
-    description: "", licenseNumber: "", yearsExperience: "",
+    description: "", licenseNumber: "", yearsExperience: "", dailyRate: "",
     photoFile: null, photoPreview: null,
     languages: [], destinations: [],
   });
@@ -687,9 +696,10 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch, onClose }) {
     setError("");
     if (isGuideRegister && step === 1) { nextStep(e); return; }
     if (isGuideRegister) {
-      if (!form.description.trim())     { setError("Please add a description about yourself."); return; }
-      if (form.languages.length === 0)  { setError("Please select at least one language."); return; }
-      if (form.destinations.length === 0) { setError("Please select at least one destination."); return; }
+      if (!form.description.trim())         { setError("Please add a description about yourself."); return; }
+      if (!form.dailyRate || Number(form.dailyRate) <= 0) { setError("Please enter your daily rate."); return; }
+      if (form.languages.length === 0)      { setError("Please select at least one language."); return; }
+      if (form.destinations.length === 0)   { setError("Please select at least one destination."); return; }
     }
 
     setLoading(true);
@@ -699,10 +709,11 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch, onClose }) {
         authData = await api.login({ email: form.email, password: form.password });
       } else {
         authData = await api.register({
-          email:    form.email,
-          password: form.password,
-          fullName: form.fullName,
-          role:     form.role,
+          email:     form.email,
+          password:  form.password,
+          fullName:  form.fullName,
+          role:      form.role,
+          dailyRate: form.role === "GUIDE" ? Number(form.dailyRate) : undefined,
         });
       }
 
@@ -839,6 +850,22 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch, onClose }) {
                     {[1,2,3,4,5,6,7,8,9,"10+","15+","20+"].map(n => <option key={n} value={n}>{n} year{n === 1 ? "" : "s"}</option>)}
                   </select>
                 </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-semibold text-slate-700">
+                  Daily Rate (USD) <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-semibold">$</span>
+                  <input
+                    type="number" min="1" step="1" value={form.dailyRate}
+                    onChange={e => set("dailyRate")(e.target.value)}
+                    placeholder="e.g. 50"
+                    className="w-full border border-slate-200 rounded-xl pl-7 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  />
+                </div>
+                <p className="text-xs text-slate-400">This is the amount tourists will be charged per day</p>
               </div>
 
               {/* Languages */}
@@ -1294,26 +1321,32 @@ function MessagesPage({ user, onNav }) {
 function ChatPage({ user, guide, onBack }) {
   const [messages, setMessages]             = useState([]);
   const [input, setInput]                   = useState("");
+  const [sendError, setSendError]           = useState("");
+  const [loadError, setLoadError]           = useState("");
   const [locationShared, setLocationShared] = useState(false);
   const [loading, setLoading]               = useState(true);
   const endRef  = useRef(null);
   const pollRef = useRef(null);
 
-  // partnerId is guide.userId (the user-ID of the person we're chatting with)
+  // partnerId is the user-ID of the person we're chatting with
   const partnerId = guide?.userId;
+  // current user's ID (stored as `id` in the session object)
+  const myId = user?.id;
 
   const loadMessages = async () => {
     if (!partnerId) return;
     try {
       const data = await api.getConversation(partnerId);
       setMessages(data);
-    } catch { /* silent */ }
+      setLoadError("");
+    } catch (err) {
+      setLoadError(err.message || "Could not load messages");
+    }
   };
 
   useEffect(() => {
     if (!partnerId) { setLoading(false); return; }
     loadMessages().then(() => setLoading(false));
-    // Poll every 5 s for new messages
     pollRef.current = setInterval(loadMessages, 5000);
     return () => clearInterval(pollRef.current);
   }, [partnerId]);
@@ -1323,11 +1356,15 @@ function ChatPage({ user, guide, onBack }) {
   const send = async () => {
     if (!input.trim() || !partnerId) return;
     const text = input;
+    setSendError("");
     setInput("");
     try {
       const msg = await api.sendMessage(partnerId, text);
       setMessages(p => [...p, msg]);
-    } catch { /* silent */ }
+    } catch (err) {
+      setInput(text); // restore text so the user can retry
+      setSendError(err.message || "Failed to send message");
+    }
   };
 
   return (
@@ -1372,11 +1409,14 @@ function ChatPage({ user, guide, onBack }) {
       {/* Messages from DB */}
       <div className="flex-1 overflow-y-auto space-y-4 pb-4 pr-1" style={{ minHeight: 0 }}>
         {loading && <Spinner />}
-        {!loading && messages.length === 0 && (
+        {!loading && loadError && (
+          <p className="text-center text-red-500 text-sm py-4 bg-red-50 rounded-2xl px-4">{loadError}</p>
+        )}
+        {!loading && !loadError && messages.length === 0 && (
           <p className="text-center text-slate-400 text-sm py-8">No messages yet. Say hi! 👋</p>
         )}
         {messages.map(m => {
-          const isMe = m.senderId === user?.id;
+          const isMe = m.senderId === myId;
           return (
             <motion.div key={m.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               className={`flex ${isMe ? "justify-end" : "justify-start"} gap-3 items-end`}>
@@ -1396,6 +1436,9 @@ function ChatPage({ user, guide, onBack }) {
 
       {/* Input */}
       <div className="pt-4 border-t border-slate-100">
+        {sendError && (
+          <p className="text-red-500 text-xs bg-red-50 rounded-xl px-3 py-2 mb-2">{sendError}</p>
+        )}
         <div className="flex gap-3 items-end">
           <div className="flex-1 bg-white border border-slate-200 rounded-2xl px-4 py-3 flex items-center gap-2">
             <input value={input} onChange={e => setInput(e.target.value)}

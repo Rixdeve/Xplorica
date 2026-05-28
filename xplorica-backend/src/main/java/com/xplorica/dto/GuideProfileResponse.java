@@ -15,7 +15,7 @@ public class GuideProfileResponse {
     private Integer yearsExperience;
     private List<String> languages;
     private List<String> destinations;
-    private Double hourlyRate;
+    private Double dailyRate;
     private Double averageRating;
     private Integer totalRatings;
     private GuideProfile.Status status;
@@ -31,7 +31,7 @@ public class GuideProfileResponse {
         r.yearsExperience = g.getYearsExperience();
         r.languages = g.getLanguages();
         r.destinations = g.getDestinations();
-        r.hourlyRate = g.getHourlyRate();
+        r.dailyRate = g.getDailyRate();
         r.averageRating = g.getAverageRating();
         r.totalRatings = g.getTotalRatings();
         r.status = g.getStatus();
