@@ -96,6 +96,9 @@ export const rateGuide = (guideId, data) =>
 export const getGuideRatings = (guideId) =>
   fetch(`/api/guides/${guideId}/ratings`, { headers: bearerHeaders() }).then(handleResponse);
 
+export const getLatestReviews = () =>
+  fetch("/api/guides/reviews", { headers: bearerHeaders() }).then(handleResponse);
+
 // ── Chat ──────────────────────────────────────────────────────────────────
 export const sendMessage = (receiverId, content) =>
   fetch("/api/chat", {

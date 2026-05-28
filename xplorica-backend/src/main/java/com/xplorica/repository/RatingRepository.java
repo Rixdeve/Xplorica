@@ -10,4 +10,5 @@ import java.util.List;
 public interface RatingRepository extends JpaRepository<Rating, Long> {
     boolean existsByTouristIdAndGuideId(Long touristId, Long guideId);
     List<Rating> findByGuideIdOrderByCreatedAtDesc(Long guideId);
+    List<Rating> findTop9ByOrderByCreatedAtDesc();
 }

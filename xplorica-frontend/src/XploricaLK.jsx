@@ -114,9 +114,15 @@ const Spinner = () => (
 // ── Landing Page ──────────────────────────────────────────────────────────
 function LandingPage({ onNav, onLogin, onRegister }) {
   const [featuredGuides, setFeaturedGuides] = useState([]);
+  const [reviews, setReviews]               = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
 
   useEffect(() => {
     api.listGuides().then(data => setFeaturedGuides(data.slice(0, 3))).catch(() => {});
+    api.getLatestReviews()
+      .then(data => setReviews(data || []))
+      .catch(() => setReviews([]))
+      .finally(() => setReviewsLoading(false));
   }, []);
 
   return (
@@ -240,31 +246,35 @@ function LandingPage({ onNav, onLogin, onRegister }) {
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Testimonials — live from DB */}
       <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-black text-blue-950">What travellers say</h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              { name: "Emma R.",      country: "United Kingdom", stars: 5, text: "Xplorica LK made my Sri Lanka trip feel personal and safe. My guide showed me places I'd never find online." },
-              { name: "Daniel M.",    country: "Australia",      stars: 5, text: "The booking was simple and the guide was professional. Perfect for authentic local experiences." },
-              { name: "Nadeesha P.", country: "Sri Lanka",       stars: 5, text: "As a local guide, this platform helps me reach international travellers and manage my bookings easily." },
-            ].map(r => (
-              <div key={r.name} className="bg-slate-50 rounded-3xl p-8 border border-slate-100">
-                <Stars rating={r.stars} />
-                <p className="mt-4 text-slate-700 leading-relaxed italic">"{r.text}"</p>
-                <div className="mt-6 flex items-center gap-3">
-                  <Avatar name={r.name} size={40} />
-                  <div>
-                    <p className="font-bold text-blue-950">{r.name}</p>
-                    <p className="text-sm text-slate-500">{r.country}</p>
+          {reviewsLoading ? (
+            <Spinner />
+          ) : reviews.length === 0 ? (
+            <p className="text-center text-slate-400 text-sm py-8">No reviews yet. Be the first to explore!</p>
+          ) : (
+            <div className="grid md:grid-cols-3 gap-6">
+              {reviews.map(r => (
+                <div key={r.id} className="bg-slate-50 rounded-3xl p-8 border border-slate-100 flex flex-col">
+                  <Stars rating={r.stars} />
+                  {r.comment && (
+                    <p className="mt-4 text-slate-700 leading-relaxed italic flex-1">"{r.comment}"</p>
+                  )}
+                  <div className="mt-6 flex items-center gap-3">
+                    <Avatar name={r.touristName} size={40} />
+                    <div>
+                      <p className="font-bold text-blue-950">{r.touristName}</p>
+                      <p className="text-sm text-slate-500">Guide: {r.guideName}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

@@ -105,15 +105,24 @@ public class GuideService {
     }
 
     public List<RatingResponse> getRatings(Long guideId) {
-        return ratingRepo.findByGuideIdOrderByCreatedAtDesc(guideId).stream().map(r -> {
-            RatingResponse res = new RatingResponse();
-            res.setId(r.getId());
-            res.setTouristName(r.getTourist().getFullName());
-            res.setStars(r.getStars());
-            res.setComment(r.getComment());
-            res.setCreatedAt(r.getCreatedAt());
-            return res;
-        }).toList();
+        return ratingRepo.findByGuideIdOrderByCreatedAtDesc(guideId)
+            .stream().map(this::toRatingResponse).toList();
+    }
+
+    public List<RatingResponse> getLatestReviews() {
+        return ratingRepo.findTop9ByOrderByCreatedAtDesc()
+            .stream().map(this::toRatingResponse).toList();
+    }
+
+    private RatingResponse toRatingResponse(Rating r) {
+        RatingResponse res = new RatingResponse();
+        res.setId(r.getId());
+        res.setTouristName(r.getTourist().getFullName());
+        res.setGuideName(r.getGuide().getUser().getFullName());
+        res.setStars(r.getStars());
+        res.setComment(r.getComment());
+        res.setCreatedAt(r.getCreatedAt());
+        return res;
     }
 
     private String getExtension(String filename) {

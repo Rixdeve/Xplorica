@@ -94,6 +94,12 @@ class GuideController {
     public ResponseEntity<List<RatingResponse>> ratings(@PathVariable Long guideId) {
         return ResponseEntity.ok(guideService.getRatings(guideId));
     }
+
+    /** Public — latest reviews across all guides (for landing page) */
+    @GetMapping("/reviews")
+    public ResponseEntity<List<RatingResponse>> latestReviews() {
+        return ResponseEntity.ok(guideService.getLatestReviews());
+    }
 }
 
 // ─── Chat Controller ──────────────────────────────────────────────────────
