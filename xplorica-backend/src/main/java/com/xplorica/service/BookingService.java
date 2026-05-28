@@ -24,11 +24,20 @@ public class BookingService {
     private final GuideProfileRepository guideRepo;
     private final UserRepository userRepo;
 
+    private static final List<Booking.Status> LIVE_STATUSES =
+        List.of(Booking.Status.PENDING, Booking.Status.CONFIRMED);
+
     @Transactional
     public BookingResponse createBooking(String email, BookingRequest req) {
         User tourist = userRepo.findByEmail(email).orElseThrow();
         GuideProfile guide = guideRepo.findById(req.getGuideId())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Guide not found"));
+
+        if (bookingRepo.existsByGuideIdAndTourDateAndStatusIn(
+                guide.getId(), req.getTourDate(), LIVE_STATUSES))
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "This guide is not available on the selected date");
+
         Booking b = Booking.builder()
             .tourist(tourist).guide(guide)
             .tourDate(req.getTourDate())
@@ -49,19 +58,45 @@ public class BookingService {
             .stream().map(this::toResponse).toList();
     }
 
+    /** Tourist pays — only allowed once the guide has accepted (CONFIRMED) */
     @Transactional
     public BookingResponse confirmPayment(String email, Long bookingId) {
         Booking b = bookingRepo.findById(bookingId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
+
+        if (b.getStatus() != Booking.Status.CONFIRMED)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "Payment is only available after the guide has accepted your booking");
+
         b.setPaymentStatus(Booking.PaymentStatus.PAID);
-        b.setStatus(Booking.Status.CONFIRMED);
         return toResponse(bookingRepo.save(b));
     }
 
+    /** Guide accepts or rejects a booking; tourist may cancel their own PENDING booking */
     @Transactional
     public BookingResponse updateStatus(String email, Long bookingId, Booking.Status status) {
+        User user = userRepo.findByEmail(email).orElseThrow();
         Booking b = bookingRepo.findById(bookingId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
+
+        if (user.getRole() == User.Role.GUIDE) {
+            GuideProfile guideProfile = guideRepo.findByUserId(user.getId()).orElseThrow();
+            if (!b.getGuide().getId().equals(guideProfile.getId()))
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This is not your booking");
+            if (status != Booking.Status.CONFIRMED && status != Booking.Status.CANCELLED)
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Guide can only accept (CONFIRMED) or reject (CANCELLED) a booking");
+        } else {
+            if (!b.getTourist().getId().equals(user.getId()))
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This is not your booking");
+            if (status != Booking.Status.CANCELLED)
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Tourists can only cancel their own bookings");
+            if (b.getStatus() != Booking.Status.PENDING)
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Only a pending booking can be cancelled");
+        }
+
         b.setStatus(status);
         return toResponse(bookingRepo.save(b));
     }
@@ -69,6 +104,8 @@ public class BookingService {
     private BookingResponse toResponse(Booking b) {
         BookingResponse r = new BookingResponse();
         r.setId(b.getId());
+        r.setGuideProfileId(b.getGuide().getId());
+        r.setTouristId(b.getTourist().getId());
         r.setGuideName(b.getGuide().getUser().getFullName());
         r.setTouristName(b.getTourist().getFullName());
         r.setTourDate(b.getTourDate());

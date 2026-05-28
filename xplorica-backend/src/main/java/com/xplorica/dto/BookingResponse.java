@@ -7,6 +7,8 @@ import java.time.LocalDateTime;
 @Data
 public class BookingResponse {
     private Long id;
+    private Long guideProfileId;
+    private Long touristId;
     private String guideName;
     private String touristName;
     private LocalDate tourDate;
