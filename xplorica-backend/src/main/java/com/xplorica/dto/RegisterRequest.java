@@ -14,4 +14,7 @@ public class RegisterRequest {
     private String password;
     @NotNull
     private User.Role role;  // TOURIST or GUIDE
+
+    @Positive
+    private Double hourlyRate; // required when role = GUIDE
 }

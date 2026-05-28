@@ -43,6 +43,9 @@ public class GuideProfile {
     @Column(name = "destination")
     private List<String> destinations;
 
+    @Column
+    private Double hourlyRate;
+
     @Column(nullable = false, columnDefinition = "DOUBLE DEFAULT 0")
     private Double averageRating;
 

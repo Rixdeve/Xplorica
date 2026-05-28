@@ -15,4 +15,7 @@ public class GuideProfileRequest {
     private List<String> languages;
     @NotEmpty
     private List<String> destinations;
+
+    @Positive
+    private Double hourlyRate;
 }

@@ -44,8 +44,11 @@ public class AuthService {
 
         Long profileId = null;
         if (req.getRole() == User.Role.GUIDE) {
+            if (req.getHourlyRate() == null || req.getHourlyRate() <= 0)
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Guides must provide a positive hourly rate");
             GuideProfile profile = GuideProfile.builder()
                 .user(user)
+                .hourlyRate(req.getHourlyRate())
                 .languages(new ArrayList<>())
                 .destinations(new ArrayList<>())
                 .build();

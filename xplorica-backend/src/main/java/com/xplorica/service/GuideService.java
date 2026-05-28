@@ -7,6 +7,7 @@ import com.xplorica.dto.RatingResponse;
 import com.xplorica.entity.GuideProfile;
 import com.xplorica.entity.Rating;
 import com.xplorica.entity.User;
+import com.xplorica.repository.BookingRepository;
 import com.xplorica.repository.GuideProfileRepository;
 import com.xplorica.repository.RatingRepository;
 import com.xplorica.repository.UserRepository;
@@ -32,6 +33,7 @@ public class GuideService {
     private final GuideProfileRepository guideRepo;
     private final UserRepository userRepo;
     private final RatingRepository ratingRepo;
+    private final BookingRepository bookingRepo;
 
     @Value("${app.upload.dir}")
     private String uploadDir;
@@ -58,6 +60,7 @@ public class GuideService {
         profile.setYearsExperience(req.getYearsExperience());
         profile.setLanguages(req.getLanguages());
         profile.setDestinations(req.getDestinations());
+        if (req.getHourlyRate() != null) profile.setHourlyRate(req.getHourlyRate());
         if (profile.getStatus() == null) profile.setStatus(GuideProfile.Status.APPROVED);
 
         return GuideProfileResponse.from(guideRepo.save(profile));
@@ -86,7 +89,10 @@ public class GuideService {
     public void rateGuide(String email, Long guideId, RatingRequest req) {
         User tourist = userRepo.findByEmail(email).orElseThrow();
         GuideProfile guide = guideRepo.findById(guideId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Guide not found"));
+        if (!bookingRepo.hasActiveBooking(tourist.getId(), guide.getUser().getId()))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                "You can only rate guides you have booked");
         if (ratingRepo.existsByTouristIdAndGuideId(tourist.getId(), guideId))
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Already rated this guide");
 
