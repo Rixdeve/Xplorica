@@ -46,11 +46,16 @@ public class AuthService {
         if (req.getRole() == User.Role.GUIDE) {
             if (req.getDailyRate() == null || req.getDailyRate() <= 0)
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Guides must provide a positive daily rate");
+            
             GuideProfile profile = GuideProfile.builder()
                 .user(user)
                 .dailyRate(req.getDailyRate())
-                .languages(new ArrayList<>())
-                .destinations(new ArrayList<>())
+                .description(req.getDescription())
+                .licenseNumber(req.getLicenseNumber())
+                .yearsExperience(req.getYearsExperience())
+                .languages(req.getLanguages() != null ? req.getLanguages() : new ArrayList<>())
+                .destinations(req.getDestinations() != null ? req.getDestinations() : new ArrayList<>())
+                .status(GuideProfile.Status.APPROVED)
                 .build();
             guideRepo.save(profile);
             profileId = profile.getId();

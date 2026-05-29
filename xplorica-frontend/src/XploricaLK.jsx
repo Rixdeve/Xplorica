@@ -821,29 +821,33 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch, onClose }) {
       if (isLogin) {
         authData = await api.login({ email: form.email, password: form.password });
       } else {
+        const expRaw = form.role === "GUIDE" && form.yearsExperience 
+          ? String(form.yearsExperience).replace("+", "").trim() 
+          : "";
+        
         authData = await api.register({
           email:     form.email,
           password:  form.password,
           fullName:  form.fullName,
           role:      form.role,
           dailyRate: form.role === "GUIDE" ? Number(form.dailyRate) : undefined,
+          description: form.role === "GUIDE" ? form.description : undefined,
+          licenseNumber: form.role === "GUIDE" ? (form.licenseNumber || null) : undefined,
+          yearsExperience: form.role === "GUIDE" && expRaw ? parseInt(expRaw, 10) : undefined,
+          languages: form.role === "GUIDE" ? form.languages : undefined,
+          destinations: form.role === "GUIDE" ? form.destinations : undefined,
         });
       }
 
       api.setToken(authData.token);
 
-      // If guide registration — persist profile details
-      if (!isLogin && form.role === "GUIDE") {
-        const expRaw = String(form.yearsExperience).replace("+", "").trim();
-        await api.upsertGuideProfile({
-          description:     form.description,
-          licenseNumber:   form.licenseNumber || null,
-          yearsExperience: expRaw ? parseInt(expRaw, 10) : null,
-          languages:       form.languages,
-          destinations:    form.destinations,
-        });
-        if (form.photoFile) {
+      // Upload photo if guide provided one
+      if (!isLogin && form.role === "GUIDE" && form.photoFile) {
+        try {
           await api.uploadGuidePhoto(form.photoFile);
+        } catch (photoErr) {
+          // Photo upload failed but registration succeeded - continue
+          console.error("Photo upload failed:", photoErr);
         }
       }
 
