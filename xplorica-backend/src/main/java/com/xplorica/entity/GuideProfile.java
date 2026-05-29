@@ -33,15 +33,33 @@ public class GuideProfile {
     @Column
     private Integer yearsExperience;
 
-    @ElementCollection
-    @CollectionTable(name = "guide_languages", joinColumns = @JoinColumn(name = "guide_id"))
-    @Column(name = "language")
-    private List<String> languages;
+    // @ElementCollection
+    // @CollectionTable(name = "guide_languages", joinColumns = @JoinColumn(name = "guide_id"))
+    // @Column(name = "language")
+    // private List<String> languages;
 
-    @ElementCollection
-    @CollectionTable(name = "guide_destinations", joinColumns = @JoinColumn(name = "guide_id"))
-    @Column(name = "destination")
-    private List<String> destinations;
+    // @ElementCollection
+    // @CollectionTable(name = "guide_destinations", joinColumns = @JoinColumn(name = "guide_id"))
+    // @Column(name = "destination")
+    // private List<String> destinations;
+
+@ElementCollection
+@CollectionTable(
+        name = "guide_languages",
+        joinColumns = @JoinColumn(name = "guide_id")
+)
+@OrderColumn(name = "idx")
+@Column(name = "language")
+private List<String> languages;
+
+@ElementCollection
+@CollectionTable(
+        name = "guide_destinations",
+        joinColumns = @JoinColumn(name = "guide_id")
+)
+@OrderColumn(name = "idx")
+@Column(name = "destination")
+private List<String> destinations;
 
     @Column
     private Double dailyRate;
