@@ -240,7 +240,7 @@ function LandingPage({ onNav, onLogin, onRegister }) {
                 <span className="text-white font-bold mt-0.5">✓</span>{t}
               </p>
             ))}
-            <Btn className="mt-6 bg-white text-blue-800 hover:bg-blue-50 px-7 py-3 rounded-full font-semibold"
+            <Btn className="mt-6 bg-blue-60 text-white hover:bg-blue-50 px-7 py-3 rounded-full font-semibold shadow-lg"
               onClick={() => onRegister("GUIDE")}>Join as a Guide</Btn>
           </div>
         </div>
@@ -285,7 +285,7 @@ function LandingPage({ onNav, onLogin, onRegister }) {
         <div className="flex justify-center gap-4">
           <Btn size="lg" variant="emerald" onClick={() => onNav("browse")}>Find a Guide Now</Btn>
           <Btn size="lg" onClick={() => onRegister("TOURIST")}
-            className="bg-white text-blue-900 hover:bg-blue-50 px-8 py-3 rounded-full font-semibold">Sign Up Free</Btn>
+            className="bg-blue-60 text-blue-900 hover:bg-blue-50 px-8 py-3 rounded-full font-semibold">Sign Up Free</Btn>
         </div>
       </section>
     </div>
@@ -426,7 +426,7 @@ function BrowsePage({ onSelectGuide }) {
 }
 
 // ── Guide Detail Page ─────────────────────────────────────────────────────
-function GuideDetailPage({ guide, user, onBack, onChat, onBook }) {
+function GuideDetailPage({ guide, user, onBack, onChat, onNav }) {
   const [showRateModal, setShowRateModal] = useState(false);
   const [stars, setStars]                 = useState(0);
   const [comment, setComment]             = useState("");
@@ -494,7 +494,7 @@ function GuideDetailPage({ guide, user, onBack, onChat, onBook }) {
         destination:   (guide.destinations || [])[0] || "",
       });
       setBookingId(booking.id);
-      setBookMsg("🎉 Booking confirmed! Proceed to payment to complete.");
+      setBookMsg("⏳ Booking request sent! Your guide will review and confirm. You can make payment once the guide accepts your booking.");
     } catch (err) {
       setBookMsg("❌ " + (err.message || "Booking failed. Please try again."));
     } finally {
@@ -635,22 +635,135 @@ function GuideDetailPage({ guide, user, onBack, onChat, onBook }) {
             </div>
           </div>
           {bookMsg
-            ? <div className={`${bookMsg.startsWith("❌") ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"} rounded-xl p-3 text-sm font-medium text-center`}>
+            ? <div className={`${bookMsg.startsWith("❌") ? "bg-red-50 text-red-700" : "bg-blue-50 text-blue-700"} rounded-xl p-3 text-sm font-medium`}>
                 {bookMsg}
               </div>
             : (
               <Btn full variant="emerald" disabled={!bookDate || bookLoading} onClick={createBooking}>
-                {bookLoading ? "Creating Booking…" : "Confirm Booking"}
+                {bookLoading ? "Creating Booking…" : "Send Booking Request"}
               </Btn>
             )}
-          {bookMsg && !bookMsg.startsWith("❌") && bookingId && (
-            <Btn full variant="primary"
-              onClick={() => onBook({ bookingId, guide, date: bookDate, people: bookPeople, total: (guide.dailyRate || 0) * bookPeople })}>
-              Proceed to Payment →
+          {bookMsg && !bookMsg.startsWith("❌") && bookingId && user && (
+            <Btn full variant="outline"
+              onClick={() => { setShowBookModal(false); if (user.role === "TOURIST") onNav("my-bookings"); }}>
+              View My Bookings
             </Btn>
           )}
         </div>
       </Modal>
+    </div>
+  );
+}
+
+// ── Auth Page ─────────────────────────────────────────────────────────────
+// ── Tourist Dashboard ──────────────────────────────────────────────────────
+function TouristDashboard({ user, onNav }) {
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadBookings = () => {
+    setLoading(true);
+    api.getMyBookings().then(setBookings).catch(() => {}).finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadBookings();
+  }, []);
+
+  const handlePayment = (booking) => {
+    if (booking.status !== "CONFIRMED") {
+      alert("Payment is only available after the guide confirms your booking.");
+      return;
+    }
+    if (booking.paymentStatus === "PAID") {
+      alert("This booking has already been paid.");
+      return;
+    }
+    // Navigate to payment page
+    onNav("payment", { bookingId: booking.id, total: booking.totalAmount });
+  };
+
+  return (
+    <div className="max-w-5xl mx-auto px-6 py-10">
+      <div className="mb-8">
+        <h1 className="text-2xl font-black text-blue-950">My Bookings</h1>
+        <p className="text-slate-500">View and manage your tour bookings</p>
+      </div>
+
+      <div className="bg-white rounded-3xl p-7 shadow-sm border border-slate-100">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="font-bold text-blue-950 text-lg">Your Bookings</h2>
+          <button
+            onClick={loadBookings}
+            className="text-sm text-blue-600 hover:text-blue-700 font-semibold">
+            🔄 Refresh
+          </button>
+        </div>
+        {loading ? <Spinner /> : bookings.length === 0
+          ? <div className="text-center py-8">
+              <p className="text-slate-400 text-sm mb-4">No bookings yet.</p>
+              <Btn variant="primary" onClick={() => onNav("browse")}>Find Guides</Btn>
+            </div>
+          : (
+            <div className="space-y-4">
+              {bookings.map(b => (
+                <div key={b.id} className="p-4 bg-slate-50 rounded-2xl">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className="font-semibold text-blue-950">{b.guideName}</p>
+                      <p className="text-sm text-slate-500">
+                        📅 {b.tourDate} · 👥 {b.numberOfPeople} people{b.destination ? ` · 📍 ${b.destination}` : ""}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-blue-950">${b.totalAmount}</p>
+                      <Badge color={b.status === "CONFIRMED" ? "emerald" : b.status === "CANCELLED" ? "slate" : b.status === "COMPLETED" ? "blue" : "amber"}>
+                        {b.status}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  {/* Status-specific messages and actions */}
+                  {b.status === "PENDING" && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mt-3">
+                      <p className="text-amber-800 text-sm font-medium">⏳ Waiting for guide confirmation</p>
+                      <p className="text-amber-700 text-xs mt-1">Your guide will review this booking soon. You'll be able to make payment once confirmed.</p>
+                    </div>
+                  )}
+                  
+                  {b.status === "CONFIRMED" && b.paymentStatus !== "PAID" && (
+                    <div className="flex gap-2 pt-3 border-t border-slate-200 mt-3">
+                      <button
+                        onClick={() => handlePayment(b)}
+                        className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold py-2 px-3 rounded-xl transition">
+                        💳 Make Payment
+                      </button>
+                    </div>
+                  )}
+                  
+                  {b.paymentStatus === "PAID" && (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mt-3">
+                      <p className="text-emerald-800 text-sm font-medium">✓ Payment completed</p>
+                      <p className="text-emerald-700 text-xs mt-1">Your booking is confirmed and paid. Enjoy your tour!</p>
+                    </div>
+                  )}
+                  
+                  {b.status === "CANCELLED" && (
+                    <div className="bg-slate-100 border border-slate-200 rounded-xl p-3 mt-3">
+                      <p className="text-slate-700 text-sm font-medium">✕ Booking cancelled</p>
+                    </div>
+                  )}
+                  
+                  {b.status === "COMPLETED" && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mt-3">
+                      <p className="text-blue-800 text-sm font-medium">✓ Tour completed</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+      </div>
     </div>
   );
 }
@@ -1229,7 +1342,12 @@ function GuideDashboard({ user, onNav }) {
       {tab === "messages" && (
         <div className="bg-white rounded-3xl p-7 shadow-sm border border-slate-100">
           <div className="flex items-center justify-between mb-5">
-            <h2 className="font-bold text-blue-950 text-lg">Messages</h2>
+            <div>
+              <h2 className="font-bold text-blue-950 text-lg">Messages</h2>
+              {partners.length > 0 && (
+                <p className="text-sm text-slate-500">{partners.length} conversation{partners.length !== 1 ? 's' : ''}</p>
+              )}
+            </div>
             <button
               onClick={() => {
                 setDataLoading(true);
@@ -1241,18 +1359,26 @@ function GuideDashboard({ user, onNav }) {
           </div>
           {dataLoading ? <Spinner /> : partners.length === 0
             ? <p className="text-slate-400 text-sm">No conversations yet.</p>
-            : partners.map(p => (
-                <div key={p.id}
-                  className="flex items-center gap-4 p-4 hover:bg-slate-50 rounded-2xl cursor-pointer transition"
-                  onClick={() => onNav("chat", { userId: p.id, fullName: p.fullName })}>
-                  <Avatar name={p.fullName} size={44} />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-blue-950">{p.fullName}</p>
-                    <p className="text-sm text-slate-500">Tap to open conversation</p>
+            : (
+              <div className="space-y-2">
+                {partners.map(p => (
+                  <div key={p.id}
+                    className="flex items-center gap-4 p-4 hover:bg-slate-50 rounded-2xl cursor-pointer transition border border-transparent hover:border-blue-100">
+                    <Avatar name={p.fullName} size={44} />
+                    <div className="flex-1 min-w-0"
+                      onClick={() => onNav("chat", { userId: p.id, fullName: p.fullName })}>
+                      <p className="font-semibold text-blue-950">{p.fullName}</p>
+                      <p className="text-sm text-slate-500">Click to view conversation</p>
+                    </div>
+                    <button
+                      onClick={() => onNav("chat", { userId: p.id, fullName: p.fullName })}
+                      className="text-blue-600 hover:text-blue-700 font-semibold text-sm px-4 py-2 rounded-lg hover:bg-blue-50 transition">
+                      Open Chat →
+                    </button>
                   </div>
-                  <span className="text-slate-400 text-lg">›</span>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
         </div>
       )}
     </div>
@@ -1332,6 +1458,8 @@ function ChatPage({ user, guide, onBack }) {
   const partnerId = guide?.userId;
   // current user's ID (stored as `id` in the session object)
   const myId = user?.id;
+  const partnerName = guide?.fullName || (user?.role === "GUIDE" ? "Tourist" : "Guide");
+  const partnerPhoto = guide?.photoUrl;
 
   const loadMessages = async () => {
     if (!partnerId) return;
@@ -1372,9 +1500,9 @@ function ChatPage({ user, guide, onBack }) {
       {/* Header */}
       <div className="flex items-center gap-4 pb-4 border-b border-slate-100 mb-4">
         <button onClick={onBack} className="text-slate-400 hover:text-slate-700 transition font-bold text-lg">←</button>
-        <Avatar name={guide?.fullName || "Guide"} photo={guide?.photoUrl} size={44} />
+        <Avatar name={partnerName} photo={partnerPhoto} size={44} />
         <div>
-          <p className="font-bold text-blue-950">{guide?.fullName || "Your Guide"}</p>
+          <p className="font-bold text-blue-950">{partnerName}</p>
           <p className="text-xs text-emerald-500 font-medium">● Online</p>
         </div>
         <div className="ml-auto flex gap-2">
@@ -1389,7 +1517,11 @@ function ChatPage({ user, guide, onBack }) {
         <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-4 flex items-center justify-between">
           <div>
             <p className="text-sm font-semibold text-emerald-800">📍 Live location active</p>
-            <p className="text-xs text-emerald-600">Your guide can see your current position</p>
+            <p className="text-xs text-emerald-600">
+              {user?.role === "GUIDE" 
+                ? "You can see the tourist's current position" 
+                : `${partnerName} can see your current position`}
+            </p>
           </div>
           <Btn size="sm" variant="ghost" onClick={() => setLocationShared(false)}>Stop</Btn>
         </div>
@@ -1467,10 +1599,15 @@ function PaymentPage({ booking, onBack, onComplete }) {
     try {
       if (booking?.bookingId) {
         await api.confirmPayment(booking.bookingId);
+        setPaid(true);
+      } else {
+        throw new Error("Invalid booking");
       }
-    } catch { /* show success regardless for demo */ }
-    setPaid(true);
-    setPaying(false);
+    } catch (err) {
+      alert("Payment failed: " + (err.message || "Please try again"));
+    } finally {
+      setPaying(false);
+    }
   };
 
   if (paid) return (
@@ -1484,7 +1621,7 @@ function PaymentPage({ booking, onBack, onComplete }) {
         <div className="flex justify-between"><span className="text-slate-500">People</span><span className="font-bold">{booking?.people || 1}</span></div>
         <div className="flex justify-between border-t pt-2 mt-2"><span className="font-bold">Total Paid</span><span className="font-black text-emerald-600">${booking?.total || 35}</span></div>
       </div>
-      <Btn full variant="primary" onClick={onBack}>Back to Guides</Btn>
+      <Btn full variant="primary" onClick={onComplete}>Back to My Bookings</Btn>
     </div>
   );
 
@@ -1600,6 +1737,9 @@ function Navbar({ user, page, onNav, onLogin, onLogout }) {
 
         <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
           <button onClick={() => onNav("browse")} className={`hover:text-blue-700 transition ${page === "browse" ? "text-blue-700" : ""}`}>Find Guides</button>
+          {user?.role === "TOURIST" && (
+            <button onClick={() => onNav("my-bookings")} className={`hover:text-blue-700 transition ${page === "my-bookings" ? "text-blue-700" : ""}`}>My Bookings</button>
+          )}
           <button onClick={() => onNav("privacy")} className="hover:text-blue-700 transition">Privacy</button>
           {user?.role === "GUIDE" && (
             <button onClick={() => onNav("dashboard")} className={`hover:text-blue-700 transition ${page === "dashboard" ? "text-blue-700" : ""}`}>Dashboard</button>
@@ -1627,6 +1767,9 @@ function Navbar({ user, page, onNav, onLogin, onLogout }) {
       {mobileOpen && (
         <div className="md:hidden bg-white border-t border-slate-100 px-4 py-4 space-y-3">
           <button onClick={() => { onNav("browse"); setMobileOpen(false); }} className="block w-full text-left py-2 text-sm font-medium text-slate-700">Find Guides</button>
+          {user?.role === "TOURIST" && (
+            <button onClick={() => { onNav("my-bookings"); setMobileOpen(false); }} className="block w-full text-left py-2 text-sm font-medium text-slate-700">My Bookings</button>
+          )}
           <button onClick={() => { onNav("privacy"); setMobileOpen(false); }} className="block w-full text-left py-2 text-sm font-medium text-slate-700">Privacy Policy</button>
           {user?.role === "GUIDE" && (
             <button onClick={() => { onNav("dashboard"); setMobileOpen(false); }} className="block w-full text-left py-2 text-sm font-medium text-slate-700">Dashboard</button>
@@ -1761,7 +1904,7 @@ export default function App() {
               <GuideDetailPage guide={selectedGuide} user={user}
                 onBack={() => nav("browse")}
                 onChat={(g) => { if (!user) { login("login"); return; } nav("chat", g); }}
-                onBook={(b) => { if (!user) { login("login"); return; } setPendingBooking(b); nav("payment"); }} />
+                onNav={nav} />
             </motion.div>
           )}
 
@@ -1794,14 +1937,27 @@ export default function App() {
           {page === "payment" && (
             <motion.div key="payment" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <PaymentPage booking={pendingBooking}
-                onBack={() => nav("browse")}
-                onComplete={() => { setPendingBooking(null); nav("browse"); }} />
+                onBack={() => nav(user?.role === "TOURIST" ? "my-bookings" : "browse")}
+                onComplete={() => { setPendingBooking(null); nav(user?.role === "TOURIST" ? "my-bookings" : "browse"); }} />
             </motion.div>
           )}
 
           {page === "dashboard" && user?.role === "GUIDE" && (
             <motion.div key="dash" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <GuideDashboard user={user} onNav={nav} />
+            </motion.div>
+          )}
+
+          {page === "my-bookings" && user && (
+            <motion.div key="my-bookings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <TouristDashboard user={user} onNav={(p, data) => {
+                if (p === "payment") {
+                  setPendingBooking(data);
+                  nav("payment");
+                } else {
+                  nav(p, data);
+                }
+              }} />
             </motion.div>
           )}
 
