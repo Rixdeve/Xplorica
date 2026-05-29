@@ -14,6 +14,7 @@ public class BookingResponse {
     private LocalDate tourDate;
     private Integer numberOfPeople;
     private Double totalAmount;
+    private Double serviceFee;
     private String status;
     private String paymentStatus;
     private String destination;

@@ -34,6 +34,9 @@ public class Booking {
     @Column(nullable = false)
     private Double totalAmount;
 
+    @Column(nullable = false)
+    private Double serviceFee;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Status status;

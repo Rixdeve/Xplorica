@@ -624,16 +624,28 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav }) {
           <Input label="Tour Date" type="date" value={bookDate} onChange={setBookDate} required />
           <Input label="Number of People" type="number" value={bookPeople}
             onChange={v => setBookPeople(Math.max(1, Number(v)))} required />
-          <div className="bg-slate-50 rounded-2xl p-4">
-            <div className="flex justify-between text-sm text-slate-600 mb-1">
-              <span>Daily rate per person</span>
-              <span>${guide.dailyRate ?? "—"}</span>
-            </div>
-            <div className="flex justify-between font-bold text-blue-950">
-              <span>Total</span>
-              <span>${guide.dailyRate ? guide.dailyRate * bookPeople : "—"}</span>
-            </div>
-          </div>
+          {(() => {
+            const subtotal   = guide.dailyRate ? guide.dailyRate * bookPeople : null;
+            const rawFee     = subtotal ? subtotal * 0.15 : null;
+            const serviceFee = rawFee ? Math.max(2, Math.min(5, Math.round(rawFee * 100) / 100)) : null;
+            const grandTotal = subtotal && serviceFee ? (subtotal + serviceFee).toFixed(2) : null;
+            return (
+              <div className="bg-slate-50 rounded-2xl p-4 space-y-2">
+                <div className="flex justify-between text-sm text-slate-600">
+                  <span>Daily rate × {bookPeople} {bookPeople === 1 ? "person" : "people"}</span>
+                  <span>{subtotal != null ? `$${subtotal.toFixed(2)}` : "—"}</span>
+                </div>
+                <div className="flex justify-between text-sm text-slate-600">
+                  <span>Service fee <span className="text-xs text-slate-400">(10–25%, $2–$5)</span></span>
+                  <span>{serviceFee != null ? `$${serviceFee.toFixed(2)}` : "—"}</span>
+                </div>
+                <div className="border-t border-slate-200 pt-2 flex justify-between font-bold text-blue-950">
+                  <span>Total you pay</span>
+                  <span>{grandTotal != null ? `$${grandTotal}` : "—"}</span>
+                </div>
+              </div>
+            );
+          })()}
           {bookMsg
             ? <div className={`${bookMsg.startsWith("❌") ? "bg-red-50 text-red-700" : "bg-blue-50 text-blue-700"} rounded-xl p-3 text-sm font-medium`}>
                 {bookMsg}
@@ -1056,7 +1068,7 @@ function GuideDashboard({ user, onNav }) {
 
   // Profile form state
   const [form, setForm] = useState({
-    description: "", licenseNumber: "", yearsExperience: "",
+    description: "", licenseNumber: "", yearsExperience: "", dailyRate: "",
     photoFile: null, photoPreview: null,
     languages: [], destinations: [],
   });
@@ -1082,13 +1094,14 @@ function GuideDashboard({ user, onNav }) {
     api.getGuide(user.guideProfileId)
       .then(g => {
         setForm({
-          description:    g.description    || "",
-          licenseNumber:  g.licenseNumber  || "",
+          description:     g.description    || "",
+          licenseNumber:   g.licenseNumber  || "",
           yearsExperience: g.yearsExperience != null ? String(g.yearsExperience) : "",
-          photoFile:   null,
-          photoPreview: g.photoUrl || null,
-          languages:   g.languages    || [],
-          destinations: g.destinations || [],
+          dailyRate:       g.dailyRate != null ? String(g.dailyRate) : "",
+          photoFile:       null,
+          photoPreview:    g.photoUrl || null,
+          languages:       g.languages    || [],
+          destinations:    g.destinations || [],
         });
         setProfileStatus(g.status || "PENDING");
       })
@@ -1126,19 +1139,21 @@ function GuideDashboard({ user, onNav }) {
 
   const save = async () => {
     setSaveError("");
-    if (!form.description.trim())      { setSaveError("Description is required."); return; }
-    if (form.languages.length === 0)   { setSaveError("Please select at least one language."); return; }
-    if (form.destinations.length === 0){ setSaveError("Please select at least one destination."); return; }
+    if (!form.description.trim())                         { setSaveError("Description is required."); return; }
+    if (!form.dailyRate || Number(form.dailyRate) <= 0)   { setSaveError("Please enter a valid daily rate."); return; }
+    if (form.languages.length === 0)                      { setSaveError("Please select at least one language."); return; }
+    if (form.destinations.length === 0)                   { setSaveError("Please select at least one destination."); return; }
 
     setSaving(true);
     try {
       const expRaw = String(form.yearsExperience).replace("+", "").trim();
       await api.upsertGuideProfile({
-        description:    form.description,
-        licenseNumber:  form.licenseNumber || null,
+        description:     form.description,
+        licenseNumber:   form.licenseNumber || null,
         yearsExperience: expRaw ? parseInt(expRaw, 10) : null,
-        languages:      form.languages,
-        destinations:   form.destinations,
+        dailyRate:       Number(form.dailyRate),
+        languages:       form.languages,
+        destinations:    form.destinations,
       });
       if (form.photoFile) {
         const url = await api.uploadGuidePhoto(form.photoFile);
@@ -1207,6 +1222,22 @@ function GuideDashboard({ user, onNav }) {
               <div className="grid grid-cols-2 gap-4">
                 <Input label="License Number" value={form.licenseNumber} onChange={setF("licenseNumber")} placeholder="SLG-0000" />
                 <Input label="Years of Experience" type="number" value={form.yearsExperience} onChange={setF("yearsExperience")} placeholder="5" />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-semibold text-slate-700">
+                  Daily Rate (USD) <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-semibold">$</span>
+                  <input
+                    type="number" min="1" step="1" value={form.dailyRate}
+                    onChange={e => setF("dailyRate")(e.target.value)}
+                    placeholder="e.g. 50"
+                    className="w-full border border-slate-200 rounded-xl pl-7 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  />
+                </div>
+                <p className="text-xs text-slate-400">Amount tourists are charged per day per person</p>
               </div>
 
               <div>

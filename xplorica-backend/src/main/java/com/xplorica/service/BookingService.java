@@ -27,6 +27,13 @@ public class BookingService {
     private static final List<Booking.Status> LIVE_STATUSES =
         List.of(Booking.Status.PENDING, Booking.Status.CONFIRMED);
 
+    /** 15% of booking total, capped between $2 and $5, rounded to 2 dp. */
+    private static double calcServiceFee(double total) {
+        double fee = total * 0.15;
+        fee = Math.max(2.0, Math.min(5.0, fee));
+        return Math.round(fee * 100.0) / 100.0;
+    }
+
     @Transactional
     public BookingResponse createBooking(String email, BookingRequest req) {
         User tourist = userRepo.findByEmail(email).orElseThrow();
@@ -38,11 +45,13 @@ public class BookingService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                 "This guide is not available on the selected date");
 
+        double serviceFee = calcServiceFee(req.getTotalAmount());
         Booking b = Booking.builder()
             .tourist(tourist).guide(guide)
             .tourDate(req.getTourDate())
             .numberOfPeople(req.getNumberOfPeople())
             .totalAmount(req.getTotalAmount())
+            .serviceFee(serviceFee)
             .destination(req.getDestination())
             .build();
         return toResponse(bookingRepo.save(b));
@@ -111,6 +120,7 @@ public class BookingService {
         r.setTourDate(b.getTourDate());
         r.setNumberOfPeople(b.getNumberOfPeople());
         r.setTotalAmount(b.getTotalAmount());
+        r.setServiceFee(b.getServiceFee());
         r.setStatus(b.getStatus().name());
         r.setPaymentStatus(b.getPaymentStatus().name());
         r.setDestination(b.getDestination());
