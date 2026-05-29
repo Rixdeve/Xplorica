@@ -14,7 +14,10 @@ export const loadUser = () => {
   try { return JSON.parse(localStorage.getItem("xplorica_user")); } catch { return null; }
 };
 export const clearUser = () => localStorage.removeItem("xplorica_user");
-const API_URL = import.meta.env.VITE_API_URL;
+
+// API base URL - empty for development (uses Vite proxy), can be set via env var for production
+const API_URL = import.meta.env.VITE_API_URL || 'https://xplorica-production.up.railway.app';
+
 // ── HTTP helpers ──────────────────────────────────────────────────────────
 const jsonHeaders = () => ({
   "Content-Type": "application/json",
