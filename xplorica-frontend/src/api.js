@@ -14,7 +14,7 @@ export const loadUser = () => {
   try { return JSON.parse(localStorage.getItem("xplorica_user")); } catch { return null; }
 };
 export const clearUser = () => localStorage.removeItem("xplorica_user");
-
+const API_URL = import.meta.env.VITE_API_URL;
 // ── HTTP helpers ──────────────────────────────────────────────────────────
 const jsonHeaders = () => ({
   "Content-Type": "application/json",
@@ -41,14 +41,14 @@ const handleResponse = async (res) => {
 
 // ── Auth ──────────────────────────────────────────────────────────────────
 export const register = (data) =>
-  fetch("/api/auth/register", {
+  fetch(`${API_URL}/api/auth/register`, {
     method: "POST",
     headers: jsonHeaders(),
     body: JSON.stringify(data),
   }).then(handleResponse);
 
 export const login = (data) =>
-  fetch("/api/auth/login", {
+  fetch(`${API_URL}/api/auth/login`, {
     method: "POST",
     headers: jsonHeaders(),
     body: JSON.stringify(data),
@@ -61,16 +61,16 @@ export const listGuides = ({ language, destination, minRating } = {}) => {
   if (destination) params.append("destination", destination);
   if (minRating)   params.append("minRating",   minRating);
   const qs = params.toString();
-  return fetch(`/api/guides${qs ? `?${qs}` : ""}`, {
+  return fetch(`${API_URL}/api/guides${qs ? `?${qs}` : ""}`, {
     headers: bearerHeaders(),
   }).then(handleResponse);
 };
 
 export const getGuide = (id) =>
-  fetch(`/api/guides/${id}`, { headers: bearerHeaders() }).then(handleResponse);
+  fetch(`${API_URL}/api/guides/${id}`, { headers: bearerHeaders() }).then(handleResponse);
 
 export const upsertGuideProfile = (data) =>
-  fetch("/api/guides/profile", {
+  fetch(`${API_URL}/api/guides/profile`, {
     method: "PUT",
     headers: jsonHeaders(),
     body: JSON.stringify(data),
@@ -79,7 +79,7 @@ export const upsertGuideProfile = (data) =>
 export const uploadGuidePhoto = (file) => {
   const fd = new FormData();
   fd.append("photo", file);
-  return fetch("/api/guides/profile/photo", {
+  return fetch(`${API_URL}/api/guides/profile/photo`, {
     method: "POST",
     headers: bearerHeaders(),
     body: fd,
@@ -87,51 +87,51 @@ export const uploadGuidePhoto = (file) => {
 };
 
 export const rateGuide = (guideId, data) =>
-  fetch(`/api/guides/${guideId}/rate`, {
+  fetch(`${API_URL}/api/guides/${guideId}/rate`, {
     method: "POST",
     headers: jsonHeaders(),
     body: JSON.stringify(data),
   }).then(handleResponse);
 
 export const getGuideRatings = (guideId) =>
-  fetch(`/api/guides/${guideId}/ratings`, { headers: bearerHeaders() }).then(handleResponse);
+  fetch(`${API_URL}/api/guides/${guideId}/ratings`, { headers: bearerHeaders() }).then(handleResponse);
 
 export const getLatestReviews = () =>
-  fetch("/api/guides/reviews", { headers: bearerHeaders() }).then(handleResponse);
+  fetch(`${API_URL}/api/guides/reviews`, { headers: bearerHeaders() }).then(handleResponse);
 
 // ── Chat ──────────────────────────────────────────────────────────────────
 export const sendMessage = (receiverId, content) =>
-  fetch("/api/chat", {
+  fetch(`${API_URL}/api/chat`, {
     method: "POST",
     headers: jsonHeaders(),
     body: JSON.stringify({ receiverId, content }),
   }).then(handleResponse);
 
 export const getConversation = (partnerId) =>
-  fetch(`/api/chat/${partnerId}`, { headers: bearerHeaders() }).then(handleResponse);
+  fetch(`${API_URL}/api/chat/${partnerId}`, { headers: bearerHeaders() }).then(handleResponse);
 
 export const getChatPartners = () =>
-  fetch("/api/chat/partners", { headers: bearerHeaders() }).then(handleResponse);
+  fetch(`${API_URL}/api/chat/partners`, { headers: bearerHeaders() }).then(handleResponse);
 
 // ── Bookings ──────────────────────────────────────────────────────────────
 export const createBooking = (data) =>
-  fetch("/api/bookings", {
+  fetch(`${API_URL}/api/bookings`, {
     method: "POST",
     headers: jsonHeaders(),
     body: JSON.stringify(data),
   }).then(handleResponse);
 
 export const getMyBookings = () =>
-  fetch("/api/bookings/mine", { headers: bearerHeaders() }).then(handleResponse);
+  fetch(`${API_URL}/api/bookings/mine`, { headers: bearerHeaders() }).then(handleResponse);
 
 export const confirmPayment = (bookingId) =>
-  fetch(`/api/bookings/${bookingId}/pay`, {
+  fetch(`${API_URL}/api/bookings/${bookingId}/pay`, {
     method: "POST",
     headers: bearerHeaders(),
   }).then(handleResponse);
 
 export const updateBookingStatus = (bookingId, status) =>
-  fetch(`/api/bookings/${bookingId}/status?status=${status}`, {
+  fetch(`${API_URL}/api/bookings/${bookingId}/status?status=${status}`, {
     method: "PATCH",
     headers: bearerHeaders(),
   }).then(handleResponse);
