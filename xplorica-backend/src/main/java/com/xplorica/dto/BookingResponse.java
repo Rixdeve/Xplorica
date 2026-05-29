@@ -15,6 +15,7 @@ public class BookingResponse {
     private Integer numberOfPeople;
     private Double totalAmount;
     private Double serviceFee;
+    private Double platformCommission;
     private String status;
     private String paymentStatus;
     private String destination;

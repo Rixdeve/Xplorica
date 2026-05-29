@@ -633,23 +633,35 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav }) {
           <Input label="Number of People" type="number" value={bookPeople}
             onChange={v => setBookPeople(Math.max(1, Number(v)))} required />
           {(() => {
-            const subtotal   = guide.dailyRate ? guide.dailyRate * bookPeople : null;
-            const rawFee     = subtotal ? subtotal * 0.15 : null;
-            const serviceFee = rawFee ? Math.max(2, Math.min(5, Math.round(rawFee * 100) / 100)) : null;
-            const grandTotal = subtotal && serviceFee ? (subtotal + serviceFee).toFixed(2) : null;
+            const subtotal          = guide.dailyRate ? guide.dailyRate * bookPeople : null;
+            const rawFee            = subtotal ? subtotal * 0.15 : null;
+            const serviceFee        = rawFee != null ? Math.max(2, Math.min(5, Math.round(rawFee * 100) / 100)) : null;
+            const platformCommission = subtotal != null ? Math.round(subtotal * 0.15 * 100) / 100 : null;
+            const grandTotal        = subtotal != null && serviceFee != null ? (subtotal + serviceFee).toFixed(2) : null;
+            const guideReceives     = subtotal != null && platformCommission != null ? (subtotal - platformCommission).toFixed(2) : null;
             return (
-              <div className="bg-slate-50 rounded-2xl p-4 space-y-2">
-                <div className="flex justify-between text-sm text-slate-600">
+              <div className="bg-slate-50 rounded-2xl p-4 space-y-2 text-sm">
+                <div className="flex justify-between text-slate-600">
                   <span>Daily rate × {bookPeople} {bookPeople === 1 ? "person" : "people"}</span>
                   <span>{subtotal != null ? `$${subtotal.toFixed(2)}` : "—"}</span>
                 </div>
-                <div className="flex justify-between text-sm text-slate-600">
-                  <span>Service fee <span className="text-xs text-slate-400">(10–25%, $2–$5)</span></span>
-                  <span>{serviceFee != null ? `$${serviceFee.toFixed(2)}` : "—"}</span>
+                <div className="flex justify-between text-slate-500">
+                  <span>Tourist service fee <span className="text-xs text-slate-400">($2–$5)</span></span>
+                  <span>{serviceFee != null ? `+$${serviceFee.toFixed(2)}` : "—"}</span>
                 </div>
                 <div className="border-t border-slate-200 pt-2 flex justify-between font-bold text-blue-950">
                   <span>Total you pay</span>
                   <span>{grandTotal != null ? `$${grandTotal}` : "—"}</span>
+                </div>
+                <div className="border-t border-slate-100 pt-2 space-y-1 text-xs text-slate-400">
+                  <div className="flex justify-between">
+                    <span>Platform commission <span>(15%)</span></span>
+                    <span>{platformCommission != null ? `$${platformCommission.toFixed(2)}` : "—"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Guide receives</span>
+                    <span>{guideReceives != null ? `$${guideReceives}` : "—"}</span>
+                  </div>
                 </div>
               </div>
             );
@@ -736,7 +748,8 @@ function TouristDashboard({ user, onNav }) {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-blue-950">${b.totalAmount}</p>
+                      <p className="font-bold text-blue-950">${(b.totalAmount + (b.serviceFee || 0)).toFixed(2)}</p>
+                      <p className="text-xs text-slate-400">incl. ${(b.serviceFee || 0).toFixed(2)} fee</p>
                       <Badge color={b.status === "CONFIRMED" ? "emerald" : b.status === "CANCELLED" ? "slate" : b.status === "COMPLETED" ? "blue" : "amber"}>
                         {b.status}
                       </Badge>
@@ -1316,7 +1329,8 @@ function GuideDashboard({ user, onNav }) {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-blue-950">${b.totalAmount}</p>
+                        <p className="font-bold text-blue-950">${(b.totalAmount - (b.platformCommission || 0)).toFixed(2)}</p>
+                        <p className="text-xs text-slate-400">after ${(b.platformCommission || 0).toFixed(2)} commission</p>
                         <Badge color={b.status === "CONFIRMED" ? "emerald" : b.status === "CANCELLED" ? "slate" : "amber"}>
                           {b.status}
                         </Badge>
