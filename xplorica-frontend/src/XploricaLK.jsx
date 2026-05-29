@@ -434,7 +434,7 @@ function BrowsePage({ onSelectGuide }) {
 }
 
 // ── Guide Detail Page ─────────────────────────────────────────────────────
-function GuideDetailPage({ guide, user, onBack, onChat, onNav }) {
+function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
   const [showRateModal, setShowRateModal] = useState(false);
   const [stars, setStars]                 = useState(0);
   const [comment, setComment]             = useState("");
@@ -460,6 +460,7 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav }) {
   }, [guide.id]);
 
   const openBookModal = () => {
+    if (!user) { onLogin("login"); return; }
     setBookDate(""); setBookPeople(1); setBookMsg(""); setBookingId(null);
     setShowBookModal(true);
   };
@@ -1919,7 +1920,8 @@ export default function App() {
   const authSuccess = (u) => {
     setUser(u);
     setAuthMode(null);
-    setPage(u.role === "GUIDE" ? "dashboard" : "home");
+    if (u.role === "GUIDE") { setPage("dashboard"); return; }
+    setPage(previousPage === "guide" && selectedGuide ? "guide" : "home");
   };
 
   const showFooter = !["auth", "chat", "payment"].includes(page);
@@ -1961,7 +1963,7 @@ export default function App() {
               <GuideDetailPage guide={selectedGuide} user={user}
                 onBack={() => nav("browse")}
                 onChat={(g) => { if (!user) { login("login"); return; } nav("chat", g); }}
-                onNav={nav} />
+                onNav={nav} onLogin={login} />
             </motion.div>
           )}
 
