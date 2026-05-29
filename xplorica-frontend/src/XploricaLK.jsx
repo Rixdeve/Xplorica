@@ -845,6 +845,9 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch, onClose }) {
     if (isGuideRegister) {
       if (!form.description.trim())         { setError("Please add a description about yourself."); return; }
       if (!form.dailyRate || Number(form.dailyRate) <= 0) { setError("Please enter your daily rate."); return; }
+      if (!form.licenseNumber.trim())       { setError("Please enter your licence number."); return; }
+      if (!form.yearsExperience || Number(form.yearsExperience) < 0) { setError("Please enter your years of experience."); return; }
+      if (!form.photoFile)                  { setError("Please upload a profile photo."); return; }
       if (form.languages.length === 0)      { setError("Please select at least one language."); return; }
       if (form.destinations.length === 0)   { setError("Please select at least one destination."); return; }
     }
@@ -866,7 +869,7 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch, onClose }) {
           role:      form.role,
           dailyRate: form.role === "GUIDE" ? Number(form.dailyRate) : undefined,
           description: form.role === "GUIDE" ? form.description : undefined,
-          licenseNumber: form.role === "GUIDE" ? (form.licenseNumber || null) : undefined,
+          licenseNumber: form.role === "GUIDE" ? form.licenseNumber : undefined,
           yearsExperience: form.role === "GUIDE" && expRaw ? parseInt(expRaw, 10) : undefined,
           languages: form.role === "GUIDE" ? form.languages : undefined,
           destinations: form.role === "GUIDE" ? form.destinations : undefined,
@@ -970,7 +973,7 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch, onClose }) {
               {/* Photo */}
               <div>
                 <label className="text-sm font-semibold text-slate-700 block mb-2">
-                  Profile Photo <span className="text-slate-400 font-normal">(optional)</span>
+                  Profile Photo <span className="text-red-500">*</span>
                 </label>
                 <div className="flex items-center gap-4">
                   <div className="w-20 h-20 rounded-2xl bg-slate-100 border-2 border-dashed border-slate-300 overflow-hidden flex items-center justify-center shrink-0">
@@ -992,9 +995,9 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch, onClose }) {
                 placeholder="Describe your experience, specialities, and what makes your tours unique..." rows={3} />
 
               <div className="grid grid-cols-2 gap-4">
-                <Input label="Licence Number" value={form.licenseNumber} onChange={set("licenseNumber")} placeholder="SLG-0000" />
+                <Input label="Licence Number *" value={form.licenseNumber} onChange={set("licenseNumber")} placeholder="SLG-0000" />
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-semibold text-slate-700">Years of Experience</label>
+                  <label className="text-sm font-semibold text-slate-700">Years of Experience <span className="text-red-500">*</span></label>
                   <select value={form.yearsExperience} onChange={e => set("yearsExperience")(e.target.value)}
                     className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                     <option value="">Select</option>
@@ -1159,10 +1162,13 @@ function GuideDashboard({ user, onNav }) {
 
   const save = async () => {
     setSaveError("");
-    if (!form.description.trim())                         { setSaveError("Description is required."); return; }
-    if (!form.dailyRate || Number(form.dailyRate) <= 0)   { setSaveError("Please enter a valid daily rate."); return; }
-    if (form.languages.length === 0)                      { setSaveError("Please select at least one language."); return; }
-    if (form.destinations.length === 0)                   { setSaveError("Please select at least one destination."); return; }
+    if (!form.description.trim())                                      { setSaveError("Description is required."); return; }
+    if (!form.dailyRate || Number(form.dailyRate) <= 0)                { setSaveError("Please enter a valid daily rate."); return; }
+    if (!form.licenseNumber.trim())                                    { setSaveError("Licence number is required."); return; }
+    if (!form.yearsExperience || Number(form.yearsExperience) < 0)     { setSaveError("Years of experience is required."); return; }
+    if (!form.photoPreview && !form.photoFile)                         { setSaveError("Please upload a profile photo."); return; }
+    if (form.languages.length === 0)                                   { setSaveError("Please select at least one language."); return; }
+    if (form.destinations.length === 0)                                { setSaveError("Please select at least one destination."); return; }
 
     setSaving(true);
     try {
@@ -1220,7 +1226,7 @@ function GuideDashboard({ user, onNav }) {
 
               {/* Photo upload */}
               <div>
-                <label className="text-sm font-semibold text-slate-700 block mb-2">Profile Photo</label>
+                <label className="text-sm font-semibold text-slate-700 block mb-2">Profile Photo <span className="text-red-500">*</span></label>
                 <div className="flex items-center gap-4">
                   <div className="w-20 h-20 rounded-2xl bg-slate-100 border-2 border-dashed border-slate-300 overflow-hidden flex items-center justify-center shrink-0">
                     {form.photoPreview
@@ -1238,8 +1244,8 @@ function GuideDashboard({ user, onNav }) {
                 placeholder="Describe your experience and specialties..." rows={4} />
 
               <div className="grid grid-cols-2 gap-4">
-                <Input label="License Number" value={form.licenseNumber} onChange={setF("licenseNumber")} placeholder="SLG-0000" />
-                <Input label="Years of Experience" type="number" value={form.yearsExperience} onChange={setF("yearsExperience")} placeholder="5" />
+                <Input label="License Number *" value={form.licenseNumber} onChange={setF("licenseNumber")} placeholder="SLG-0000" />
+                <Input label="Years of Experience *" type="number" value={form.yearsExperience} onChange={setF("yearsExperience")} placeholder="5" />
               </div>
 
               <div className="flex flex-col gap-1.5">
