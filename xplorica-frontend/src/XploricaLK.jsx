@@ -300,7 +300,7 @@ function GuideCard({ guide, onView }) {
       onClick={onView}>
       <div className="h-48 bg-linear-to-br from-blue-100 to-emerald-50 relative overflow-hidden">
         {guide.photoUrl
-          ? <img src={guide.photoUrl} alt={guide.fullName} className="w-full h-full object-cover" />
+          ? <img src={`${import.meta.env.VITE_API_URL}${guide.photoUrl}`} alt={guide.fullName} className="w-full h-full object-cover" />
           : <div className="w-full h-full flex items-center justify-center"><Avatar name={guide.fullName} size={80} /></div>}
         <div className="absolute top-3 right-3">
           <Badge color="amber">★ {guide.averageRating ?? "—"}</Badge>
@@ -513,7 +513,7 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav }) {
           <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-100">
             <div className="h-64 bg-linear-to-br from-blue-100 to-emerald-50 flex items-center justify-center">
               {guide.photoUrl
-                ? <img src={guide.photoUrl} alt={guide.fullName} className="w-full h-full object-cover" />
+                ? <img src={`${import.meta.env.VITE_API_URL}${guide.photoUrl}`} alt={guide.fullName} className="w-full h-full object-cover" />
                 : <Avatar name={guide.fullName} size={100} />}
             </div>
             <div className="p-5">
@@ -941,7 +941,9 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch, onClose }) {
                 <div className="flex items-center gap-4">
                   <div className="w-20 h-20 rounded-2xl bg-slate-100 border-2 border-dashed border-slate-300 overflow-hidden flex items-center justify-center shrink-0">
                     {form.photoPreview
-                      ? <img src={form.photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                      ? <img src={form.photoPreview?.startsWith("/uploads")
+      ? `${import.meta.env.VITE_API_URL}${form.photoPreview}`
+      : form.photoPreview} alt="Preview" className="w-full h-full object-cover" />
                       : <span className="text-3xl">📷</span>}
                   </div>
                   <div className="flex-1">
@@ -1187,7 +1189,9 @@ function GuideDashboard({ user, onNav }) {
                 <div className="flex items-center gap-4">
                   <div className="w-20 h-20 rounded-2xl bg-slate-100 border-2 border-dashed border-slate-300 overflow-hidden flex items-center justify-center shrink-0">
                     {form.photoPreview
-                      ? <img src={form.photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                      ? <img src={form.photoPreview?.startsWith("/uploads")
+      ? `${import.meta.env.VITE_API_URL}${form.photoPreview}`
+      : form.photoPreview} alt="Preview" className="w-full h-full object-cover" />
                       : <Avatar name={user.fullName} size={60} />}
                   </div>
                   <label className="cursor-pointer inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm px-4 py-2.5 rounded-xl transition">
