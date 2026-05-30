@@ -1,9 +1,11 @@
 package com.xplorica.service;
 
+import com.xplorica.dto.GuideAnalyticsResponse;
 import com.xplorica.dto.GuideProfileRequest;
 import com.xplorica.dto.GuideProfileResponse;
 import com.xplorica.dto.RatingRequest;
 import com.xplorica.dto.RatingResponse;
+import com.xplorica.entity.Booking;
 import com.xplorica.entity.GuideProfile;
 import com.xplorica.entity.Rating;
 import com.xplorica.entity.User;
@@ -24,7 +26,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -55,11 +59,17 @@ public class GuideService {
         GuideProfile profile = guideRepo.findByUserId(user.getId())
             .orElse(GuideProfile.builder().user(user).build());
 
+        boolean isPremium = profile.isEffectivelyPremium();
+        List<String> destinations = req.getDestinations() == null ? List.of() : req.getDestinations();
+        if (!isPremium && destinations.size() > 5)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "Non-premium guides can add up to 5 destinations. Upgrade to Premium for unlimited.");
+
         profile.setDescription(req.getDescription());
         profile.setLicenseNumber(req.getLicenseNumber());
         profile.setYearsExperience(req.getYearsExperience());
         profile.setLanguages(req.getLanguages());
-        profile.setDestinations(req.getDestinations());
+        profile.setDestinations(destinations);
         if (req.getDailyRate() != null) profile.setDailyRate(req.getDailyRate());
         if (profile.getStatus() == null) profile.setStatus(GuideProfile.Status.APPROVED);
 
@@ -112,6 +122,56 @@ public class GuideService {
     public List<RatingResponse> getLatestReviews() {
         return ratingRepo.findTop9ByOrderByCreatedAtDesc()
             .stream().map(this::toRatingResponse).toList();
+    }
+
+    @Transactional
+    public GuideProfileResponse subscribe(String email) {
+        User user = userRepo.findByEmail(email).orElseThrow();
+        GuideProfile profile = guideRepo.findByUserId(user.getId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Guide profile not found"));
+        profile.setPremium(true);
+        profile.setPremiumExpiresAt(LocalDateTime.now().plusMonths(1));
+        return GuideProfileResponse.from(guideRepo.save(profile));
+    }
+
+    public GuideAnalyticsResponse getAnalytics(String email) {
+        User user = userRepo.findByEmail(email).orElseThrow();
+        GuideProfile profile = guideRepo.findByUserId(user.getId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Guide profile not found"));
+        if (!profile.isEffectivelyPremium())
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Analytics is a Premium feature");
+
+        List<Booking> bookings = bookingRepo.findByGuideIdOrderByCreatedAtDesc(profile.getId());
+
+        GuideAnalyticsResponse r = new GuideAnalyticsResponse();
+        r.setTotalBookings((int) bookings.stream().filter(b -> b.getStatus() != Booking.Status.CANCELLED).count());
+        r.setCompletedTours((int) bookings.stream().filter(b -> b.getStatus() == Booking.Status.COMPLETED).count());
+        r.setConfirmedBookings((int) bookings.stream().filter(b -> b.getStatus() == Booking.Status.CONFIRMED).count());
+        r.setPendingBookings((int) bookings.stream().filter(b -> b.getStatus() == Booking.Status.PENDING).count());
+        r.setCancelledBookings((int) bookings.stream().filter(b -> b.getStatus() == Booking.Status.CANCELLED).count());
+        r.setTotalRevenue(bookings.stream()
+            .filter(b -> b.getStatus() == Booking.Status.COMPLETED || b.getStatus() == Booking.Status.CONFIRMED)
+            .mapToDouble(b -> b.getTotalAmount() != null ? b.getTotalAmount() - (b.getPlatformCommission() != null ? b.getPlatformCommission() : 0) : 0)
+            .sum());
+        r.setTotalPeopleServed(bookings.stream()
+            .filter(b -> b.getStatus() != Booking.Status.CANCELLED)
+            .mapToInt(b -> b.getNumberOfPeople() != null ? b.getNumberOfPeople() : 0).sum());
+        r.setUniqueTourists((int) bookings.stream()
+            .filter(b -> b.getStatus() != Booking.Status.CANCELLED)
+            .map(b -> b.getTourist().getId()).distinct().count());
+        r.setAverageRating(profile.getAverageRating() != null ? profile.getAverageRating() : 0.0);
+        r.setTotalReviews(profile.getTotalRatings() != null ? profile.getTotalRatings() : 0);
+
+        Map<String, Long> destCounts = new LinkedHashMap<>();
+        bookings.stream()
+            .filter(b -> b.getDestination() != null && !b.getDestination().isBlank())
+            .flatMap(b -> Arrays.stream(b.getDestination().split(",\\s*")))
+            .forEach(d -> destCounts.merge(d.trim(), 1L, Long::sum));
+        r.setTopDestinations(destCounts.entrySet().stream()
+            .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+            .map(Map.Entry::getKey).limit(5).collect(Collectors.toList()));
+
+        return r;
     }
 
     private RatingResponse toRatingResponse(Rating r) {

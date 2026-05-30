@@ -121,17 +121,20 @@ const Spinner = () => (
 
 // ── Landing Page ──────────────────────────────────────────────────────────
 function LandingPage({ onNav, onLogin, onRegister }) {
-  const [featuredGuides, setFeaturedGuides] = useState([]);
+  const [allGuides, setAllGuides]           = useState([]);
   const [reviews, setReviews]               = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
 
   useEffect(() => {
-    api.listGuides().then(data => setFeaturedGuides(data.slice(0, 3))).catch(() => {});
+    api.listGuides().then(data => setAllGuides(data || [])).catch(() => {});
     api.getLatestReviews()
       .then(data => setReviews(data || []))
       .catch(() => setReviews([]))
       .finally(() => setReviewsLoading(false));
   }, []);
+
+  const premiumGuides = allGuides.filter(g => g.premium);
+  const regularGuides = allGuides.filter(g => !g.premium).slice(0, 3);
 
   return (
     <div>
@@ -207,19 +210,42 @@ function LandingPage({ onNav, onLogin, onRegister }) {
         </div>
       </section>
 
-      {/* Featured Guides — live from DB */}
-      {featuredGuides.length > 0 && (
+      {/* Premium Guides Carousel */}
+      {premiumGuides.length > 0 && (
+        <section className="py-20 bg-gradient-to-br from-amber-50 to-yellow-50 border-y border-amber-100">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="flex items-end justify-between mb-8">
+              <div>
+                <span className="inline-flex items-center gap-1.5 bg-amber-400 text-amber-900 text-xs font-black px-3 py-1 rounded-full mb-3">⭐ PREMIUM GUIDES</span>
+                <h2 className="text-3xl font-black text-blue-950">Featured & Verified Experts</h2>
+                <p className="text-slate-500 text-sm mt-1">Hand-picked guides with exclusive visibility and verified credentials</p>
+              </div>
+              <Btn variant="outline" onClick={() => onNav("browse")}>View all guides</Btn>
+            </div>
+            <div className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: "none" }}>
+              {premiumGuides.map(g => (
+                <div key={g.id} className="snap-start shrink-0 w-72">
+                  <GuideCard guide={g} onView={() => onNav("guide", g)} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Featured Guides — regular */}
+      {regularGuides.length > 0 && (
         <section className="py-24 bg-white">
           <div className="max-w-7xl mx-auto px-6">
             <div className="flex items-end justify-between mb-12">
               <div>
-                <p className="text-emerald-600 font-bold text-sm uppercase tracking-wider mb-2">Featured guides</p>
+                <p className="text-emerald-600 font-bold text-sm uppercase tracking-wider mb-2">Our guides</p>
                 <h2 className="text-4xl font-black text-blue-950">Top rated this month</h2>
               </div>
               <Btn variant="outline" onClick={() => onNav("browse")}>View all</Btn>
             </div>
             <div className="grid md:grid-cols-3 gap-6">
-              {featuredGuides.map(g => (
+              {regularGuides.map(g => (
                 <GuideCard key={g.id} guide={g} onView={() => onNav("guide", g)} />
               ))}
             </div>
@@ -310,7 +336,8 @@ function GuideCard({ guide, onView }) {
         {guide.photoUrl
           ? <img src={mediaUrl(guide.photoUrl)} alt={guide.fullName} className="w-full h-full object-cover" />
           : <div className="w-full h-full flex items-center justify-center"><Avatar name={guide.fullName} size={80} /></div>}
-        <div className="absolute top-3 right-3">
+        <div className="absolute top-3 right-3 flex flex-col items-end gap-1">
+          {guide.premium && <span className="bg-amber-400 text-amber-900 text-xs font-black px-2 py-0.5 rounded-full">⭐ Premium</span>}
           <Badge color="amber">★ {guide.averageRating ?? "—"}</Badge>
         </div>
       </div>
@@ -448,7 +475,7 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
   const [bookStartDate, setBookStartDate]     = useState("");
   const [bookEndDate, setBookEndDate]         = useState("");
   const [bookPeople, setBookPeople]           = useState(1);
-  const [bookDestination, setBookDestination] = useState("");
+  const [bookDestinations, setBookDestinations] = useState([]);
   const [bookMsg, setBookMsg]                 = useState("");
   const [bookLoading, setBookLoading]         = useState(false);
   const [bookingId, setBookingId]             = useState(null);
@@ -463,7 +490,7 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
 
   const openBookModal = () => {
     if (!user) { onLogin("login"); return; }
-    setBookStartDate(""); setBookEndDate(""); setBookPeople(1); setBookDestination(""); setBookMsg(""); setBookingId(null);
+    setBookStartDate(""); setBookEndDate(""); setBookPeople(1); setBookDestinations([]); setBookMsg(""); setBookingId(null);
     setShowBookModal(true);
   };
 
@@ -493,7 +520,7 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
 
   // Create booking in DB
   const createBooking = async () => {
-    if (!bookStartDate || !bookEndDate || !bookDestination) return;
+    if (!bookStartDate || !bookEndDate || bookDestinations.length === 0) return;
     if (bookEndDate < bookStartDate) { setBookMsg("❌ End date must be on or after the start date"); return; }
     setBookLoading(true);
     try {
@@ -505,7 +532,7 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
         endDate:        bookEndDate,
         numberOfPeople: bookPeople,
         totalAmount:    rate * bookPeople * days,
-        destination:    bookDestination,
+        destination:    bookDestinations.join(", "),
       });
       setBookingId(booking.id);
       setBookMsg("⏳ Booking request sent! Your guide will review and confirm. You can make payment once the guide accepts your booking.");
@@ -574,16 +601,6 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
             </div>
           </div>
 
-          {/* Location Sharing */}
-          <div className="bg-linear-to-r from-blue-50 to-emerald-50 rounded-3xl p-7 border border-blue-100">
-            <h2 className="text-lg font-bold text-blue-950 mb-3">📍 Location Sharing</h2>
-            <p className="text-slate-600 text-sm mb-4">Share your live location with your guide for seamless meetups.</p>
-            <Btn variant="primary" size="sm"
-              onClick={() => alert("Location sharing enabled! Your guide will receive your coordinates.")}>
-              Enable Location Sharing
-            </Btn>
-          </div>
-
           {/* Reviews from DB */}
           <div className="bg-white rounded-3xl p-7 shadow-sm border border-slate-100">
             <h2 className="text-lg font-bold text-blue-950 mb-5">Reviews ({reviews.length})</h2>
@@ -641,17 +658,26 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
           </div>
           <Input label="Number of People" type="number" value={bookPeople}
             onChange={v => setBookPeople(Math.max(1, Number(v)))} required />
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-semibold text-slate-700">Destination <span className="text-red-500">*</span></label>
-            <select
-              value={bookDestination}
-              onChange={e => setBookDestination(e.target.value)}
-              className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-              <option value="">Select a destination…</option>
-              {(guide.destinations || []).map(d => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-semibold text-slate-700">Destinations <span className="text-red-500">*</span> <span className="text-slate-400 font-normal text-xs">(select all that apply)</span></label>
+            <div className="flex flex-wrap gap-2">
+              {(guide.destinations || []).map(d => {
+                const selected = bookDestinations.includes(d);
+                return (
+                  <button key={d} type="button"
+                    onClick={() => setBookDestinations(prev =>
+                      prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]
+                    )}
+                    className={`px-4 py-2 rounded-xl text-sm font-semibold border transition
+                      ${selected
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-slate-600 border-slate-200 hover:border-blue-400 hover:text-blue-600"}`}>
+                    📍 {d}
+                  </button>
+                );
+              })}
+            </div>
+            {bookDestinations.length === 0 && <p className="text-xs text-slate-400">Pick at least one destination</p>}
           </div>
           {(() => {
             const days              = bookStartDate && bookEndDate && bookEndDate >= bookStartDate
@@ -695,7 +721,7 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
             </div>
           )}
           {!bookingId && (
-            <Btn full variant="emerald" disabled={!bookStartDate || !bookEndDate || !bookDestination || bookLoading} onClick={createBooking}>
+            <Btn full variant="emerald" disabled={!bookStartDate || !bookEndDate || bookDestinations.length === 0 || bookLoading} onClick={createBooking}>
               {bookLoading ? "Creating Booking…" : "Send Booking Request"}
             </Btn>
           )}
@@ -1062,20 +1088,28 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch, onClose }) {
                 </div>
               </div>
 
-              {/* Destinations */}
+              {/* Destinations — capped at 5 for non-premium (registration is always non-premium) */}
               <div>
                 <label className="text-sm font-semibold text-slate-700 block mb-2">
-                  Destinations You Offer * <span className="text-slate-400 font-normal">({form.destinations.length} selected)</span>
+                  Destinations You Offer * <span className="text-slate-400 font-normal">({form.destinations.length}/5 selected · upgrade to Premium for unlimited)</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {DESTINATIONS.map(d => (
-                    <button key={d} type="button" onClick={() => toggle("destinations", d)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all ${
-                        form.destinations.includes(d)
-                          ? "bg-blue-600 border-blue-600 text-white shadow-sm scale-105"
-                          : "border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-700"
-                      }`}>📍 {d}</button>
-                  ))}
+                  {DESTINATIONS.map(d => {
+                    const selected = form.destinations.includes(d);
+                    const atLimit = !selected && form.destinations.length >= 5;
+                    return (
+                      <button key={d} type="button"
+                        onClick={() => !atLimit && toggle("destinations", d)}
+                        disabled={atLimit}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all ${
+                          selected
+                            ? "bg-blue-600 border-blue-600 text-white shadow-sm scale-105"
+                            : atLimit
+                            ? "border-slate-100 text-slate-300 cursor-not-allowed"
+                            : "border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-700"
+                        }`}>📍 {d}</button>
+                    );
+                  })}
                 </div>
               </div>
             </>
@@ -1128,6 +1162,13 @@ function GuideDashboard({ user, onNav }) {
   const [bookings, setBookings]       = useState([]);
   const [dataLoading, setDataLoading] = useState(false);
 
+  // Premium
+  const [isPremium, setIsPremium]             = useState(false);
+  const [premiumExpiry, setPremiumExpiry]     = useState(null);
+  const [subscribing, setSubscribing]         = useState(false);
+  const [analytics, setAnalytics]             = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
   const setF = k => v => setForm(p => ({ ...p, [k]: v }));
   const toggleItem = (key, val) => setForm(p => ({
     ...p, [key]: p[key].includes(val) ? p[key].filter(i => i !== val) : [...p[key], val],
@@ -1149,18 +1190,23 @@ function GuideDashboard({ user, onNav }) {
           destinations:    g.destinations || [],
         });
         setProfileStatus(g.status || "PENDING");
+        setIsPremium(g.premium || false);
+        setPremiumExpiry(g.premiumExpiresAt || null);
       })
       .catch(() => {})
       .finally(() => setProfileLoading(false));
   }, [user.guideProfileId]);
 
-  // Load bookings when tab changes
+  // Load bookings / analytics when tab changes
   useEffect(() => {
     if (tab === "bookings") {
       setDataLoading(true);
       api.getMyBookings().then(setBookings).catch(() => {}).finally(() => setDataLoading(false));
+    } else if (tab === "analytics" && isPremium) {
+      setAnalyticsLoading(true);
+      api.getGuideAnalytics().then(setAnalytics).catch(() => {}).finally(() => setAnalyticsLoading(false));
     }
-  }, [tab]);
+  }, [tab, isPremium]);
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -1218,7 +1264,7 @@ function GuideDashboard({ user, onNav }) {
 
       {/* Tabs */}
       <div className="flex gap-2 bg-slate-100 rounded-xl p-1 mb-8 w-fit">
-        {[["profile","Profile"],["bookings","Bookings"]].map(([k, label]) => (
+        {[["profile","Profile"],["bookings","Bookings"],["analytics", isPremium ? "📊 Analytics" : "📊 Analytics ⭐"]].map(([k, label]) => (
           <button key={k} onClick={() => setTab(k)}
             className={`px-5 py-2 text-sm font-semibold rounded-lg transition
               ${tab === k ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
@@ -1288,15 +1334,30 @@ function GuideDashboard({ user, onNav }) {
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-slate-700 block mb-2">Destinations *</label>
+                <label className="text-sm font-semibold text-slate-700 block mb-2">
+                  Destinations *{" "}
+                  {isPremium
+                    ? <span className="text-amber-500 font-normal text-xs">⭐ Unlimited (Premium)</span>
+                    : <span className="text-slate-400 font-normal text-xs">({form.destinations.length}/5 · upgrade for unlimited)</span>}
+                </label>
                 <div className="flex flex-wrap gap-2">
-                  {DESTINATIONS.map(d => (
-                    <button key={d} onClick={() => toggleItem("destinations", d)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition
-                        ${form.destinations.includes(d) ? "bg-blue-600 text-white border-blue-600" : "border-slate-200 text-slate-600 hover:border-blue-400"}`}>
-                      {d}
-                    </button>
-                  ))}
+                  {DESTINATIONS.map(d => {
+                    const selected = form.destinations.includes(d);
+                    const atLimit = !isPremium && !selected && form.destinations.length >= 5;
+                    return (
+                      <button key={d} type="button"
+                        onClick={() => !atLimit && toggleItem("destinations", d)}
+                        disabled={atLimit}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition
+                          ${selected
+                            ? "bg-blue-600 text-white border-blue-600"
+                            : atLimit
+                            ? "border-slate-100 text-slate-300 cursor-not-allowed"
+                            : "border-slate-200 text-slate-600 hover:border-blue-400"}`}>
+                        {d}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1321,6 +1382,39 @@ function GuideDashboard({ user, onNav }) {
                 <div className="bg-amber-50 rounded-3xl p-5 border border-amber-100">
                   <p className="text-amber-800 text-sm font-semibold mb-2">⏳ Awaiting Approval</p>
                   <p className="text-amber-700 text-xs">Your profile is under review. You'll be notified once approved.</p>
+                </div>
+              )}
+              {/* Premium status card */}
+              {isPremium ? (
+                <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-3xl p-5 border border-amber-200">
+                  <p className="text-amber-800 font-bold text-sm mb-1">⭐ Premium Active</p>
+                  <p className="text-amber-700 text-xs">Unlimited destinations · Analytics · Featured visibility</p>
+                  {premiumExpiry && (
+                    <p className="text-amber-600 text-xs mt-2">Expires: {new Date(premiumExpiry).toLocaleDateString()}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-5 border border-blue-100">
+                  <p className="text-blue-950 font-bold text-sm mb-1">⭐ Go Premium — $10/month</p>
+                  <ul className="text-slate-600 text-xs space-y-1 mb-3 mt-2">
+                    <li>✓ Featured carousel on home page</li>
+                    <li>✓ Unlimited destinations</li>
+                    <li>✓ Analytics dashboard</li>
+                  </ul>
+                  <button
+                    onClick={async () => {
+                      setSubscribing(true);
+                      try {
+                        const g = await api.subscribePremium();
+                        setIsPremium(g.premium);
+                        setPremiumExpiry(g.premiumExpiresAt);
+                      } catch (e) { alert(e.message || "Subscription failed"); }
+                      finally { setSubscribing(false); }
+                    }}
+                    disabled={subscribing}
+                    className="w-full bg-amber-400 hover:bg-amber-500 text-amber-900 font-bold text-sm py-2 rounded-xl transition disabled:opacity-60">
+                    {subscribing ? "Processing…" : "Subscribe for $10"}
+                  </button>
                 </div>
               )}
             </div>
@@ -1416,6 +1510,82 @@ function GuideDashboard({ user, onNav }) {
                 ))}
               </div>
             )}
+        </div>
+      )}
+
+      {/* ── Analytics Tab ── */}
+      {tab === "analytics" && (
+        <div>
+          {!isPremium ? (
+            <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-3xl p-10 border border-amber-200 text-center">
+              <p className="text-4xl mb-4">📊</p>
+              <h3 className="text-xl font-bold text-blue-950 mb-2">Analytics is a Premium Feature</h3>
+              <p className="text-slate-500 text-sm mb-6">Upgrade to Premium to unlock detailed insights about your bookings, revenue, and tourists.</p>
+              <button
+                onClick={async () => {
+                  setSubscribing(true);
+                  try {
+                    const g = await api.subscribePremium();
+                    setIsPremium(g.premium); setPremiumExpiry(g.premiumExpiresAt);
+                    setTab("analytics");
+                  } catch (e) { alert(e.message || "Subscription failed"); }
+                  finally { setSubscribing(false); }
+                }}
+                disabled={subscribing}
+                className="bg-amber-400 hover:bg-amber-500 text-amber-900 font-bold px-8 py-3 rounded-xl transition disabled:opacity-60">
+                {subscribing ? "Processing…" : "Subscribe for $10/month"}
+              </button>
+            </div>
+          ) : analyticsLoading ? <Spinner /> : !analytics ? (
+            <p className="text-slate-400 text-sm">Could not load analytics.</p>
+          ) : (
+            <div className="space-y-6">
+              {/* Metric cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { label: "Total Bookings",    value: analytics.totalBookings,    color: "blue" },
+                  { label: "Completed Tours",   value: analytics.completedTours,   color: "emerald" },
+                  { label: "Pending",           value: analytics.pendingBookings,  color: "amber" },
+                  { label: "Cancelled",         value: analytics.cancelledBookings, color: "slate" },
+                ].map(m => (
+                  <div key={m.label} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 text-center">
+                    <p className="text-3xl font-black text-blue-950">{m.value}</p>
+                    <p className="text-xs text-slate-500 mt-1">{m.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* Revenue */}
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                  <h3 className="font-bold text-blue-950 mb-4">Earnings</h3>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between"><span className="text-slate-500">Total Revenue (after commission)</span><span className="font-bold text-emerald-600">${analytics.totalRevenue.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Total People Served</span><span className="font-semibold">{analytics.totalPeopleServed}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Unique Tourists</span><span className="font-semibold">{analytics.uniqueTourists}</span></div>
+                  </div>
+                </div>
+
+                {/* Ratings & Destinations */}
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                  <h3 className="font-bold text-blue-950 mb-4">Performance</h3>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between"><span className="text-slate-500">Average Rating</span><span className="font-bold text-amber-500">★ {analytics.averageRating.toFixed(1)}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Total Reviews</span><span className="font-semibold">{analytics.totalReviews}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Confirmed Bookings</span><span className="font-semibold">{analytics.confirmedBookings}</span></div>
+                  </div>
+                  {analytics.topDestinations?.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-xs text-slate-400 mb-2">Top Destinations</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {analytics.topDestinations.map(d => <Badge key={d} color="blue">{d}</Badge>)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

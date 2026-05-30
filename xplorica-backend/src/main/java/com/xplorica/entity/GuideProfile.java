@@ -3,6 +3,7 @@ package com.xplorica.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -70,6 +71,12 @@ private List<String> destinations;
     @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
     private Integer totalRatings;
 
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT false")
+    private boolean premium;
+
+    @Column
+    private LocalDateTime premiumExpiresAt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Status status;
@@ -83,6 +90,10 @@ private List<String> destinations;
         if (averageRating == null) averageRating = 0.0;
         if (totalRatings == null) totalRatings = 0;
         if (status == null) status = Status.APPROVED;
+    }
+
+    public boolean isEffectivelyPremium() {
+        return premium && premiumExpiresAt != null && premiumExpiresAt.isAfter(LocalDateTime.now());
     }
 
     // Recalculate average when a new rating is added

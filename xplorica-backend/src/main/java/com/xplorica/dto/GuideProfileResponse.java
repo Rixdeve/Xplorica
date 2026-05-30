@@ -2,6 +2,7 @@ package com.xplorica.dto;
 
 import com.xplorica.entity.GuideProfile;
 import lombok.Data;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -19,6 +20,8 @@ public class GuideProfileResponse {
     private Double averageRating;
     private Integer totalRatings;
     private GuideProfile.Status status;
+    private boolean premium;
+    private LocalDateTime premiumExpiresAt;
 
     public static GuideProfileResponse from(GuideProfile g) {
         GuideProfileResponse r = new GuideProfileResponse();
@@ -35,6 +38,8 @@ public class GuideProfileResponse {
         r.averageRating = g.getAverageRating();
         r.totalRatings = g.getTotalRatings();
         r.status = g.getStatus();
+        r.premium = g.isEffectivelyPremium();
+        r.premiumExpiresAt = g.getPremiumExpiresAt();
         return r;
     }
 }

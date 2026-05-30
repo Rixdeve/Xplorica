@@ -100,6 +100,22 @@ class GuideController {
     public ResponseEntity<List<RatingResponse>> latestReviews() {
         return ResponseEntity.ok(guideService.getLatestReviews());
     }
+
+    /** Guide — activate premium subscription ($10/month, simulated) */
+    @PostMapping("/subscribe")
+    public ResponseEntity<GuideProfileResponse> subscribe(
+        @AuthenticationPrincipal UserDetails currentUser
+    ) {
+        return ResponseEntity.ok(guideService.subscribe(currentUser.getUsername()));
+    }
+
+    /** Guide — analytics dashboard (premium only) */
+    @GetMapping("/analytics")
+    public ResponseEntity<GuideAnalyticsResponse> analytics(
+        @AuthenticationPrincipal UserDetails currentUser
+    ) {
+        return ResponseEntity.ok(guideService.getAnalytics(currentUser.getUsername()));
+    }
 }
 
 // ─── Chat Controller ──────────────────────────────────────────────────────

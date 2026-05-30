@@ -138,3 +138,13 @@ export const updateBookingStatus = (bookingId, status) =>
     method: "PATCH",
     headers: bearerHeaders(),
   }).then(handleResponse);
+
+// ── Premium ───────────────────────────────────────────────────────────────
+export const subscribePremium = () =>
+  fetch(`${API_URL}/api/guides/subscribe`, {
+    method: "POST",
+    headers: bearerHeaders(),
+  }).then(handleResponse);
+
+export const getGuideAnalytics = () =>
+  fetch(`${API_URL}/api/guides/analytics`, { headers: bearerHeaders() }).then(handleResponse);
