@@ -6,14 +6,14 @@ import * as api from "./api.js";
 const DESTINATIONS = ["Sigiriya", "Kandy", "Ella", "Galle", "Colombo", "Yala", "Nuwara Eliya", "Mirissa", "Jaffna", "Dambulla", "Adam's Peak", "Anuradhapura", "Polonnaruwa", "Trincomalee", "Horton Plains", "Arugam Bay", "Bentota", "Negombo", "Udawalawe", "Kitulgala", "Kalpitiya"];
 const LANGUAGES    = ["English", "Sinhala", "Tamil", "French", "German", "Japanese", "Mandarin", "Italian", "Hindi", "Spanish", "Russian", "Arabic", "Portuguese"];
 const DESTINATIONS_DATA = [
-  { name: "Sigiriya",     tagline: "Ancient Lion Rock Fortress",       image: "https://images.unsplash.com/photo-1586613835341-f8e6e3d4f9b9?w=800&q=80", tag: "UNESCO Heritage" },
-  { name: "Kandy",        tagline: "Temple of the Sacred Tooth Relic", image: "https://images.unsplash.com/photo-1567157577867-05ccb1388e66?w=800&q=80", tag: "Cultural Capital" },
-  { name: "Ella",         tagline: "Nine Arch Bridge & Tea Trails",    image: "https://images.unsplash.com/photo-1588598198321-9735fd52455b?w=800&q=80", tag: "Hill Country" },
-  { name: "Galle",        tagline: "Dutch Colonial Fort by the Sea",   image: "https://images.unsplash.com/photo-1575994532987-0d3e42c83c40?w=800&q=80", tag: "Historic Fort" },
-  { name: "Mirissa",      tagline: "Whale Watching & Sunset Beaches",  image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80", tag: "Beach Paradise" },
-  { name: "Yala",         tagline: "Leopards & Wildlife Safari",       image: "https://images.unsplash.com/photo-1516426122078-c23e76319801?w=800&q=80", tag: "National Park" },
-  { name: "Nuwara Eliya", tagline: "Tea Plantations & Cool Climate",   image: "https://images.unsplash.com/photo-1566296314736-6eaac1ca0cb9?w=800&q=80", tag: "Tea Country" },
-  { name: "Trincomalee",  tagline: "Crystal Bays & Whale Sharks",      image: "https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&q=80", tag: "East Coast" },
+  { name: "Sigiriya",     tagline: "Ancient Lion Rock Fortress",       image: "https://www.outofoffice.com/wp-content/uploads/sigiriya-459197_1920-jpg.webp", tag: "UNESCO Heritage" },
+  { name: "Kandy",        tagline: "Temple of the Sacred Tooth Relic", image: "https://thatswhatshehad.com/wp-content/uploads/2018/07/chathura-anuradha-subasinghe-40uQmE9Zq8g-unsplash-1024x683.jpg", tag: "Cultural Capital" },
+  { name: "Ella",         tagline: "Nine Arch Bridge & Tea Trails",    image: "https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg?w=800&q=80", tag: "Hill Country" },
+  { name: "Galle",        tagline: "Dutch Colonial Fort by the Sea",   image: "https://www.honeymoonguidesrilanka.com/wp-content/uploads/2024/07/The-Best-Beaches-in-Galle-1200x630-1.jpg", tag: "Historic Fort" },
+  { name: "Mirissa",      tagline: "Whale Watching & Sunset Beaches",  image: "https://images.squarespace-cdn.com/content/v1/596b2969d2b85786e6892853/1531738844396-H040L4I7S80ZGQV196K4/DJI_0780.jpg?format=1500w", tag: "Beach Paradise" },
+  { name: "Yala",         tagline: "Leopards & Wildlife Safari",       image: "https://photos.tpn.to/fk/pt/em/ot/800x450.jpg", tag: "National Park" },
+  { name: "Nuwara Eliya", tagline: "Tea Plantations & Cool Climate",   image: "https://www.indoasia-tours.com/wp-content/uploads/2021/01/Cover-Image.jpg", tag: "Tea Country" },
+  { name: "Trincomalee",  tagline: "Crystal Bays & Whale Sharks",      image: "https://i0.wp.com/blog.worldholidayvibes.com/wp-content/uploads/2024/08/Trincomalee-BeachTrincomalee-Tourist-Places-World-Holiday-Vibes-Blog-1024x580.jpg?resize=1024%2C580&ssl=1", tag: "East Coast" },
 ];
 
 /** Prefix /uploads/... paths with the backend base URL; absolute URLs pass through unchanged. */
@@ -191,12 +191,14 @@ function LandingPage({ onNav, onLogin, onRegister }) {
   }, []);
 
   useEffect(() => {
-    const t = setInterval(() => setHeroSlide(s => (s + 1) % DESTINATIONS_DATA.length), 3500);
+    const t = setInterval(() => setHeroSlide(s => s + 1), 3500);
     return () => clearInterval(t);
   }, []);
 
   const premiumGuides = allGuides.filter(g => g.premium);
-  const regularGuides = allGuides.filter(g => !g.premium).slice(0, 3);
+  const topRatedGuides = [...allGuides]
+    .sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0))
+    .slice(0, 6);
 
   return (
     <div>
@@ -230,43 +232,145 @@ function LandingPage({ onNav, onLogin, onRegister }) {
 
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.3 }}
             className="hidden md:block">
-            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-4xl p-3 max-w-sm ml-auto shadow-2xl overflow-hidden">
-              <div className="relative rounded-3xl overflow-hidden" style={{ height: 360 }}>
-                <AnimatePresence mode="wait">
-                  <motion.img
-                    key={heroSlide}
-                    src={DESTINATIONS_DATA[heroSlide].image}
-                    alt={DESTINATIONS_DATA[heroSlide].name}
-                    initial={{ opacity: 0, scale: 1.06 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.97 }}
-                    transition={{ duration: 0.7, ease: "easeInOut" }}
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                </AnimatePresence>
-                <div className="absolute inset-0 bg-gradient-to-t from-blue-950/85 via-blue-950/20 to-transparent" />
-                <span className="absolute top-4 left-4 bg-white/90 text-blue-900 text-xs font-bold px-3 py-1 rounded-full">
-                  {DESTINATIONS_DATA[heroSlide].tag}
-                </span>
-                <div className="absolute bottom-0 left-0 right-0 p-5">
+            {(() => {
+              const STATIC_REVIEWS = [
+                { touristName: "Sarah M.",  guideName: "Nuwan Perera",   stars: 5, comment: "Our guide made Sigiriya unforgettable. He knew hidden paths no tourist ever finds alone. Truly a once-in-a-lifetime morning.", location: "Sigiriya" },
+                { touristName: "James K.",  guideName: "Chamara Silva",  stars: 5, comment: "Three days through Ella and the tea country — absolutely world class. Local knowledge you simply cannot get from a travel app.", location: "Ella" },
+                { touristName: "Hana L.",   guideName: "Saman Fernando", stars: 5, comment: "Yala safari with a real local guide changed everything. We spotted four leopards in a single morning. Breathtaking.", location: "Yala" },
+                { touristName: "Marco D.",  guideName: "Priya Bandara",  stars: 5, comment: "Galle Fort after dark with a local storyteller — the history came alive in a way no guidebook ever could. Highly recommend.", location: "Galle" },
+              ];
+              const pool = reviews.length > 0 ? reviews : STATIC_REVIEWS;
+              const r    = pool[heroSlide % pool.length];
+              const idx  = heroSlide % pool.length;
+              return (
+                <div className="max-w-sm ml-auto">
                   <AnimatePresence mode="wait">
-                    <motion.div key={heroSlide}
-                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                      transition={{ duration: 0.4 }}>
-                      <h3 className="text-white font-black text-2xl leading-tight">{DESTINATIONS_DATA[heroSlide].name}</h3>
-                      <p className="text-blue-200 text-sm mt-1">{DESTINATIONS_DATA[heroSlide].tagline}</p>
+                    <motion.div key={idx}
+                      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.5 }}
+                      className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-4xl p-7 shadow-2xl">
+
+                      {/* Quote mark */}
+                      <div className="text-6xl font-black text-emerald-400 leading-none mb-2 select-none" style={{ fontFamily: "Georgia, serif" }}>"</div>
+
+                      {/* Review text */}
+                      <p className="text-white text-base leading-relaxed italic">
+                        {r.comment || "An amazing experience with a knowledgeable local guide."}
+                      </p>
+
+                      {/* Stars */}
+                      <div className="flex gap-0.5 mt-5">
+                        {[1,2,3,4,5].map(n => (
+                          <span key={n} className={`text-lg ${n <= (r.stars || 5) ? "text-amber-400" : "text-white/20"}`}>★</span>
+                        ))}
+                      </div>
+
+                      {/* Reviewer */}
+                      <div className="flex items-center gap-3 mt-5 pt-5 border-t border-white/15">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-emerald-400 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                          {(r.touristName || "T")[0]}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-white font-bold text-sm truncate">{r.touristName || "Traveller"}</p>
+                          <p className="text-white/60 text-xs truncate">
+                            Toured with <span className="text-emerald-300">{r.guideName || r.guideName}</span>
+                            {r.location && <span> · 📍 {r.location}</span>}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Dot indicators */}
+                      <div className="flex gap-1.5 mt-5">
+                        {pool.map((_, i) => (
+                          <button key={i} onClick={() => setHeroSlide(i)}
+                            className={`h-1 rounded-full transition-all duration-300 ${i === idx ? "w-6 bg-white" : "w-2 bg-white/30"}`} />
+                        ))}
+                      </div>
                     </motion.div>
                   </AnimatePresence>
-                  <div className="flex gap-1.5 mt-4">
-                    {DESTINATIONS_DATA.map((_, i) => (
-                      <button key={i} onClick={() => setHeroSlide(i)}
-                        className={`h-1.5 rounded-full transition-all duration-300 ${i === heroSlide ? "w-6 bg-white" : "w-1.5 bg-white/40"}`} />
-                    ))}
-                  </div>
                 </div>
-              </div>
-            </div>
+              );
+            })()}
           </motion.div>
+        </div>
+      </section>
+
+      {/* ── Recommended Destinations ── */}
+      <section className="py-24 bg-slate-900">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex items-end justify-between mb-10">
+            <div>
+              <p className="text-emerald-400 font-bold text-sm uppercase tracking-wider mb-2">Explore Sri Lanka</p>
+              <h2 className="text-4xl font-black text-white">Recommended Destinations</h2>
+              <p className="text-slate-400 mt-2 max-w-lg">From ancient kingdoms to golden beaches — find the perfect guide for every corner of the island.</p>
+            </div>
+            <Btn variant="emerald" onClick={() => onNav("browse")}>Find a Guide</Btn>
+          </div>
+
+          {/* Top section: CSS grid so all cells share the same row heights */}
+          <div className="grid gap-4 mb-4" style={{
+            gridTemplateColumns: "2fr 1fr",
+            gridTemplateRows: "220px 220px",
+          }}>
+            {/* Sigiriya — spans both rows */}
+            <motion.div whileHover={{ scale: 1.01 }} transition={{ duration: 0.3 }}
+              onClick={() => onNav("browse")}
+              className="relative rounded-3xl overflow-hidden cursor-pointer group"
+              style={{ gridRow: "1 / 3" }}>
+              <img src={DESTINATIONS_DATA[0].image} alt={DESTINATIONS_DATA[0].name}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <span className="absolute top-5 left-5 bg-white/90 text-blue-900 text-xs font-bold px-3 py-1 rounded-full">
+                {DESTINATIONS_DATA[0].tag}
+              </span>
+              <div className="absolute bottom-0 left-0 right-0 p-8">
+                <h3 className="text-white font-black text-4xl leading-tight">{DESTINATIONS_DATA[0].name}</h3>
+                <p className="text-slate-300 text-base mt-2">{DESTINATIONS_DATA[0].tagline}</p>
+                <span className="inline-flex items-center gap-1.5 mt-4 text-emerald-400 text-sm font-semibold group-hover:gap-3 transition-all">
+                  Explore with a guide →
+                </span>
+              </div>
+            </motion.div>
+
+            {/* Kandy + Ella — each occupies one row in the right column */}
+            {DESTINATIONS_DATA.slice(1, 3).map(d => (
+              <motion.div key={d.name} whileHover={{ scale: 1.02 }} transition={{ duration: 0.25 }}
+                onClick={() => onNav("browse")}
+                className="relative rounded-3xl overflow-hidden cursor-pointer group">
+                <img src={d.image} alt={d.name}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+                <span className="absolute top-3 left-3 bg-white/90 text-blue-900 text-xs font-bold px-2.5 py-0.5 rounded-full">
+                  {d.tag}
+                </span>
+                <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <h3 className="text-white font-bold text-xl">{d.name}</h3>
+                  <p className="text-slate-300 text-xs mt-1">{d.tagline}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Bottom row: 5 equal cards */}
+          <div className="grid grid-cols-5 gap-4">
+            {DESTINATIONS_DATA.slice(3).map(d => (
+              <motion.div key={d.name} whileHover={{ scale: 1.03, y: -4 }} transition={{ duration: 0.25 }}
+                onClick={() => onNav("browse")}
+                className="relative rounded-2xl overflow-hidden cursor-pointer group"
+                style={{ height: 220 }}>
+                <img src={d.image} alt={d.name}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <span className="absolute top-2.5 left-2.5 bg-white/85 text-blue-900 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  {d.tag}
+                </span>
+                <div className="absolute bottom-0 left-0 right-0 p-4">
+                  <h3 className="text-white font-bold text-base leading-tight">{d.name}</h3>
+                  <p className="text-slate-300 text-xs mt-0.5 line-clamp-1">{d.tagline}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -295,95 +399,6 @@ function LandingPage({ onNav, onLogin, onRegister }) {
         </div>
       </section>
 
-      {/* Recommended Destinations */}
-      {(() => {
-        const destRef = useRef(null);
-        const pausedRef = useRef(false);
-        const CARD_W = 244; // 224px card + 20px gap
-
-        useEffect(() => {
-          const el = destRef.current;
-          if (!el) return;
-          const tick = setInterval(() => {
-            if (pausedRef.current) return;
-            if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 10) {
-              el.scrollTo({ left: 0, behavior: "smooth" });
-            } else {
-              el.scrollBy({ left: CARD_W, behavior: "smooth" });
-            }
-          }, 3000);
-          return () => clearInterval(tick);
-        }, []);
-
-        const scroll = (dir) => {
-          destRef.current?.scrollBy({ left: dir * CARD_W, behavior: "smooth" });
-        };
-
-        return (
-          <section className="py-24 bg-white">
-            <div className="max-w-7xl mx-auto px-6">
-              <div className="text-center mb-12">
-                <p className="text-emerald-600 font-bold text-sm uppercase tracking-wider mb-2">Explore Sri Lanka</p>
-                <h2 className="text-4xl font-black text-blue-950">Recommended Destinations</h2>
-                <p className="text-slate-500 mt-3 max-w-xl mx-auto">From ancient kingdoms to golden beaches — discover the iconic places your guide will bring to life.</p>
-              </div>
-
-              <div className="relative">
-                {/* Left button */}
-                <button
-                  onClick={() => scroll(-1)}
-                  onMouseEnter={() => (pausedRef.current = true)}
-                  onMouseLeave={() => (pausedRef.current = false)}
-                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 w-11 h-11 bg-white border border-slate-200 rounded-full shadow-lg flex items-center justify-center text-blue-950 hover:bg-blue-950 hover:text-white hover:border-blue-950 transition-all">
-                  ‹
-                </button>
-
-                {/* Carousel */}
-                <div ref={destRef}
-                  onMouseEnter={() => (pausedRef.current = true)}
-                  onMouseLeave={() => (pausedRef.current = false)}
-                  className="flex gap-5 overflow-x-auto pb-2 snap-x snap-mandatory"
-                  style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-                  {DESTINATIONS_DATA.map((d, i) => (
-                    <motion.div key={d.name}
-                      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-                      whileHover={{ y: -6 }}
-                      onClick={() => onNav("browse")}
-                      className="snap-start shrink-0 w-56 rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer group border border-slate-100">
-                      <div className="relative h-72 overflow-hidden">
-                        <img src={d.image} alt={d.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-blue-950/80 via-blue-950/20 to-transparent" />
-                        <span className="absolute top-3 left-3 bg-white/90 text-blue-900 text-xs font-bold px-2.5 py-1 rounded-full">
-                          {d.tag}
-                        </span>
-                        <div className="absolute bottom-0 left-0 right-0 p-4">
-                          <h3 className="text-white font-black text-lg leading-tight">{d.name}</h3>
-                          <p className="text-blue-200 text-xs mt-0.5">{d.tagline}</p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-
-                {/* Right button */}
-                <button
-                  onClick={() => scroll(1)}
-                  onMouseEnter={() => (pausedRef.current = true)}
-                  onMouseLeave={() => (pausedRef.current = false)}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 w-11 h-11 bg-white border border-slate-200 rounded-full shadow-lg flex items-center justify-center text-blue-950 hover:bg-blue-950 hover:text-white hover:border-blue-950 transition-all">
-                  ›
-                </button>
-              </div>
-
-              <div className="text-center mt-10">
-                <Btn variant="primary" onClick={() => onNav("browse")}>Find a Guide for Your Destination</Btn>
-              </div>
-            </div>
-          </section>
-        );
-      })()}
-
       {/* Premium Guides Carousel */}
       {premiumGuides.length > 0 && (
         <section className="py-20 bg-gradient-to-br from-amber-50 to-yellow-50 border-y border-amber-100">
@@ -396,19 +411,17 @@ function LandingPage({ onNav, onLogin, onRegister }) {
               </div>
               <Btn variant="outline" onClick={() => onNav("browse")}>View all guides</Btn>
             </div>
-            <div className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: "none" }}>
+            <div className="grid md:grid-cols-3 gap-6">
               {premiumGuides.map(g => (
-                <div key={g.id} className="snap-start shrink-0 w-72">
-                  <GuideCard guide={g} onView={() => onNav("guide", g)} />
-                </div>
+                <GuideCard key={g.id} guide={g} onView={() => onNav("guide", g)} />
               ))}
             </div>
           </div>
         </section>
       )}
 
-      {/* Featured Guides — regular */}
-      {regularGuides.length > 0 && (
+      {/* Featured Guides — top rated (premium + regular mixed) */}
+      {topRatedGuides.length > 0 && (
         <section className="py-24 bg-white">
           <div className="max-w-7xl mx-auto px-6">
             <div className="flex items-end justify-between mb-12">
@@ -419,7 +432,7 @@ function LandingPage({ onNav, onLogin, onRegister }) {
               <Btn variant="outline" onClick={() => onNav("browse")}>View all</Btn>
             </div>
             <div className="grid md:grid-cols-3 gap-6">
-              {regularGuides.map(g => (
+              {topRatedGuides.map(g => (
                 <GuideCard key={g.id} guide={g} onView={() => onNav("guide", g)} />
               ))}
             </div>
@@ -560,7 +573,12 @@ function BrowsePage({ onSelectGuide }) {
       destination: dest    || undefined,
       minRating:   minRating || undefined,
     })
-      .then(data => setGuides(data))
+      .then(data => setGuides(
+        [...(data || [])].sort((a, b) => {
+          if (a.premium !== b.premium) return a.premium ? -1 : 1;
+          return (b.averageRating || 0) - (a.averageRating || 0);
+        })
+      ))
       .catch(err => setError(err.message || "Failed to load guides"))
       .finally(() => setLoading(false));
   }, [lang, dest, minRating]);
@@ -617,6 +635,7 @@ function BrowsePage({ onSelectGuide }) {
         <>
           <p className="text-slate-500 text-sm mb-5">
             {guides.length} guide{guides.length !== 1 ? "s" : ""} found
+            {/* {guides.some(g => g.premium) && <span className="ml-2 text-amber-600 font-semibold">· ⭐ Premium guides shown first</span>} */}
           </p>
           <div className="grid md:grid-cols-3 gap-6">
             {guides.map(g => <GuideCard key={g.id} guide={g} onView={() => onSelectGuide(g)} />)}
@@ -1716,12 +1735,13 @@ function GuideDashboard({ user, onNav }) {
           ) : (
             <div className="space-y-6">
               {/* Stat cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 {[
-                  { label: "Total Bookings",  value: analytics.totalBookings,    icon: "📋", bg: "from-blue-50 to-blue-100",    num: "text-blue-800" },
-                  { label: "Completed Tours", value: analytics.completedTours,   icon: "✅", bg: "from-emerald-50 to-emerald-100", num: "text-emerald-700" },
-                  { label: "Pending",         value: analytics.pendingBookings,  icon: "⏳", bg: "from-amber-50 to-amber-100",  num: "text-amber-700" },
-                  { label: "Cancelled",       value: analytics.cancelledBookings, icon: "✕", bg: "from-slate-50 to-slate-100",  num: "text-slate-600" },
+                  { label: "Total Bookings",   value: analytics.totalBookings,     icon: "📋", bg: "from-blue-50 to-blue-100",      num: "text-blue-800" },
+                  { label: "Completed",        value: analytics.completedTours,    icon: "✅", bg: "from-emerald-50 to-emerald-100", num: "text-emerald-700" },
+                  { label: "Confirmed",        value: analytics.confirmedBookings, icon: "🎟️", bg: "from-indigo-50 to-indigo-100",  num: "text-indigo-700" },
+                  { label: "Pending",          value: analytics.pendingBookings,   icon: "⏳", bg: "from-amber-50 to-amber-100",    num: "text-amber-700" },
+                  { label: "Cancelled",        value: analytics.cancelledBookings, icon: "✕",  bg: "from-slate-50 to-slate-100",    num: "text-slate-600" },
                 ].map(m => (
                   <div key={m.label} className={`bg-gradient-to-br ${m.bg} rounded-2xl p-5 border border-white shadow-sm text-center`}>
                     <div className="text-2xl mb-1">{m.icon}</div>
