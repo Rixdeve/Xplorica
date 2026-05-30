@@ -25,11 +25,15 @@ public class Booking {
     @JoinColumn(name = "guide_id", nullable = false)
     private GuideProfile guide;
 
-    @Column(nullable = false)
+    @Column
     private LocalDate startDate;
 
-    @Column(nullable = false)
+    @Column
     private LocalDate endDate;
+
+    /** Kept for DB backward-compat (tour_date NOT NULL column). Populated from startDate in @PrePersist. */
+    @Column(name = "tour_date")
+    private LocalDate tourDate;
 
     @Column(nullable = false)
     private Integer numberOfPeople;
@@ -37,10 +41,10 @@ public class Booking {
     @Column(nullable = false)
     private Double totalAmount;
 
-    @Column(nullable = false)
+    @Column
     private Double serviceFee;
 
-    @Column(nullable = false)
+    @Column
     private Double platformCommission;
 
     @Enumerated(EnumType.STRING)
@@ -66,5 +70,6 @@ public class Booking {
         if (status == null) status = Status.PENDING;
         if (paymentStatus == null) paymentStatus = PaymentStatus.PENDING;
         if (platformCommission == null) platformCommission = 0.0;
+        if (tourDate == null && startDate != null) tourDate = startDate;
     }
 }
