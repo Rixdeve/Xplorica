@@ -1343,9 +1343,16 @@ function GuideDashboard({ user, onNav }) {
                         </Badge>
                       </div>
                     </div>
-                    {/* Status Actions */}
+                    {/* Chat + Status Actions */}
+                    <div className="flex gap-2 pt-3 border-t border-slate-200 mt-3">
+                      <button
+                        onClick={() => onNav("chat", { userId: b.touristId, fullName: b.touristName })}
+                        className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm font-semibold py-2 px-4 rounded-xl transition">
+                        💬 Chat
+                      </button>
+                    </div>
                     {b.status !== "CANCELLED" && b.status !== "COMPLETED" && (
-                      <div className="flex gap-2 pt-3 border-t border-slate-200">
+                      <div className="flex gap-2 pt-2">
                         {b.status === "PENDING" && (
                           <button
                             onClick={async () => {
