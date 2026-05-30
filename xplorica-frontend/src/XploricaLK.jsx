@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import * as api from "./api.js";
 
 // ── Design tokens ──────────────────────────────────────────────────────────
-const DESTINATIONS = ["Sigiriya", "Kandy", "Ella", "Galle", "Colombo", "Yala", "Nuwara Eliya", "Mirissa", "Dambulla", "Adam's Peak"];
-const LANGUAGES    = ["English", "Sinhala", "Tamil", "French", "German", "Japanese", "Mandarin", "Italian"];
+const DESTINATIONS = ["Sigiriya", "Kandy", "Ella", "Galle", "Colombo", "Yala", "Nuwara Eliya", "Mirissa", "Jaffna", "Dambulla", "Adam's Peak", "Anuradhapura", "Polonnaruwa", "Trincomalee", "Horton Plains", "Arugam Bay", "Bentota", "Negombo", "Udawalawe", "Kitulgala", "Kalpitiya"];
+const LANGUAGES    = ["English", "Sinhala", "Tamil", "French", "German", "Japanese", "Mandarin", "Italian", "Hindi", "Spanish", "Russian", "Arabic", "Portuguese"];
 
 /** Prefix /uploads/... paths with the backend base URL; absolute URLs pass through unchanged. */
 const API_BASE = import.meta.env.VITE_API_URL || 'https://xplorica-production.up.railway.app';
