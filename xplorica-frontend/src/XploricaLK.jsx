@@ -1954,7 +1954,7 @@ export default function App() {
           {page === "home" && (
             <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <LandingPage onNav={nav} onLogin={login}
-                onRegister={(role) => { setDefaultRole(role); login("register"); }} />
+                onRegister={(role) => login("register", role)} />
             </motion.div>
           )}
 
