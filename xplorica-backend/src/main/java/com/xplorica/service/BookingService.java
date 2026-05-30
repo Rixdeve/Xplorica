@@ -45,16 +45,21 @@ public class BookingService {
         GuideProfile guide = guideRepo.findById(req.getGuideId())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Guide not found"));
 
-        if (bookingRepo.existsByGuideIdAndTourDateAndStatusIn(
-                guide.getId(), req.getTourDate(), LIVE_STATUSES))
+        if (req.getEndDate().isBefore(req.getStartDate()))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "End date must be on or after the start date");
+
+        if (bookingRepo.existsByGuideIdAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusIn(
+                guide.getId(), req.getEndDate(), req.getStartDate(), LIVE_STATUSES))
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                "This guide is not available on the selected date");
+                "This guide is not available on the selected dates");
 
         double serviceFee = calcServiceFee(req.getTotalAmount());
         double platformCommission = calcPlatformCommission(req.getTotalAmount());
         Booking b = Booking.builder()
             .tourist(tourist).guide(guide)
-            .tourDate(req.getTourDate())
+            .startDate(req.getStartDate())
+            .endDate(req.getEndDate())
             .numberOfPeople(req.getNumberOfPeople())
             .totalAmount(req.getTotalAmount())
             .serviceFee(serviceFee)
@@ -124,7 +129,8 @@ public class BookingService {
         r.setTouristId(b.getTourist().getId());
         r.setGuideName(b.getGuide().getUser().getFullName());
         r.setTouristName(b.getTourist().getFullName());
-        r.setTourDate(b.getTourDate());
+        r.setStartDate(b.getStartDate());
+        r.setEndDate(b.getEndDate());
         r.setNumberOfPeople(b.getNumberOfPeople());
         r.setTotalAmount(b.getTotalAmount());
         r.setServiceFee(b.getServiceFee());

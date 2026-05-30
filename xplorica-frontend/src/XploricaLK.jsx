@@ -445,7 +445,8 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
   const [reviewsLoading, setReviewsLoading] = useState(true);
 
   const [showBookModal, setShowBookModal]     = useState(false);
-  const [bookDate, setBookDate]               = useState("");
+  const [bookStartDate, setBookStartDate]     = useState("");
+  const [bookEndDate, setBookEndDate]         = useState("");
   const [bookPeople, setBookPeople]           = useState(1);
   const [bookDestination, setBookDestination] = useState("");
   const [bookMsg, setBookMsg]                 = useState("");
@@ -462,7 +463,7 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
 
   const openBookModal = () => {
     if (!user) { onLogin("login"); return; }
-    setBookDate(""); setBookPeople(1); setBookDestination(""); setBookMsg(""); setBookingId(null);
+    setBookStartDate(""); setBookEndDate(""); setBookPeople(1); setBookDestination(""); setBookMsg(""); setBookingId(null);
     setShowBookModal(true);
   };
 
@@ -492,15 +493,18 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
 
   // Create booking in DB
   const createBooking = async () => {
-    if (!bookDate || !bookDestination) return;
+    if (!bookStartDate || !bookEndDate || !bookDestination) return;
+    if (bookEndDate < bookStartDate) { setBookMsg("❌ End date must be on or after the start date"); return; }
     setBookLoading(true);
     try {
       const rate = guide.dailyRate || 0;
+      const days = Math.round((new Date(bookEndDate) - new Date(bookStartDate)) / 86400000) + 1;
       const booking = await api.createBooking({
         guideId:        guide.id,
-        tourDate:       bookDate,
+        startDate:      bookStartDate,
+        endDate:        bookEndDate,
         numberOfPeople: bookPeople,
-        totalAmount:    rate * bookPeople,
+        totalAmount:    rate * bookPeople * days,
         destination:    bookDestination,
       });
       setBookingId(booking.id);
@@ -631,7 +635,10 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
       {/* Book Modal */}
       <Modal open={showBookModal} onClose={() => setShowBookModal(false)} title={`Book ${guide.fullName}`}>
         <div className="space-y-5">
-          <Input label="Tour Date" type="date" value={bookDate} onChange={setBookDate} required />
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="Start Date" type="date" value={bookStartDate} onChange={setBookStartDate} required />
+            <Input label="End Date" type="date" value={bookEndDate} onChange={v => { if (v >= bookStartDate) setBookEndDate(v); }} required />
+          </div>
           <Input label="Number of People" type="number" value={bookPeople}
             onChange={v => setBookPeople(Math.max(1, Number(v)))} required />
           <div className="flex flex-col gap-1.5">
@@ -647,7 +654,9 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
             </select>
           </div>
           {(() => {
-            const subtotal          = guide.dailyRate ? guide.dailyRate * bookPeople : null;
+            const days              = bookStartDate && bookEndDate && bookEndDate >= bookStartDate
+              ? Math.round((new Date(bookEndDate) - new Date(bookStartDate)) / 86400000) + 1 : null;
+            const subtotal          = guide.dailyRate && days ? guide.dailyRate * bookPeople * days : null;
             const rawFee            = subtotal ? subtotal * 0.15 : null;
             const serviceFee        = rawFee != null ? Math.max(2, Math.min(5, Math.round(rawFee * 100) / 100)) : null;
             const platformCommission = subtotal != null ? Math.round(subtotal * 0.15 * 100) / 100 : null;
@@ -656,7 +665,7 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
             return (
               <div className="bg-slate-50 rounded-2xl p-4 space-y-2 text-sm">
                 <div className="flex justify-between text-slate-600">
-                  <span>Daily rate × {bookPeople} {bookPeople === 1 ? "person" : "people"}</span>
+                  <span>Daily rate × {bookPeople} {bookPeople === 1 ? "person" : "people"} × {days ?? "—"} {days === 1 ? "day" : "days"}</span>
                   <span>{subtotal != null ? `$${subtotal.toFixed(2)}` : "—"}</span>
                 </div>
                 <div className="flex justify-between text-slate-500">
@@ -686,7 +695,7 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
             </div>
           )}
           {!bookingId && (
-            <Btn full variant="emerald" disabled={!bookDate || !bookDestination || bookLoading} onClick={createBooking}>
+            <Btn full variant="emerald" disabled={!bookStartDate || !bookEndDate || !bookDestination || bookLoading} onClick={createBooking}>
               {bookLoading ? "Creating Booking…" : "Send Booking Request"}
             </Btn>
           )}
@@ -759,7 +768,7 @@ function TouristDashboard({ user, onNav }) {
                     <div>
                       <p className="font-semibold text-blue-950">{b.guideName}</p>
                       <p className="text-sm text-slate-500">
-                        📅 {b.tourDate} · 👥 {b.numberOfPeople} people{b.destination ? ` · 📍 ${b.destination}` : ""}
+                        📅 {b.startDate} → {b.endDate} · 👥 {b.numberOfPeople} people{b.destination ? ` · 📍 ${b.destination}` : ""}
                       </p>
                     </div>
                     <div className="text-right">
@@ -1333,7 +1342,7 @@ function GuideDashboard({ user, onNav }) {
                       <div>
                         <p className="font-semibold text-blue-950">{b.touristName || b.guideName}</p>
                         <p className="text-sm text-slate-500">
-                          📅 {b.tourDate} · 👥 {b.numberOfPeople} people{b.destination ? ` · 📍 ${b.destination}` : ""}
+                          📅 {b.startDate} → {b.endDate} · 👥 {b.numberOfPeople} people{b.destination ? ` · 📍 ${b.destination}` : ""}
                         </p>
                       </div>
                       <div className="text-right">

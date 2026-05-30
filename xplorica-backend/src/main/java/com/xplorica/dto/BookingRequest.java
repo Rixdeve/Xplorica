@@ -9,7 +9,9 @@ public class BookingRequest {
     @NotNull
     private Long guideId;
     @NotNull
-    private LocalDate tourDate;
+    private LocalDate startDate;
+    @NotNull
+    private LocalDate endDate;
     @NotNull @Min(1)
     private Integer numberOfPeople;
     @NotNull @Positive

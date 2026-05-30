@@ -13,9 +13,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByTouristIdOrderByCreatedAtDesc(Long touristId);
     List<Booking> findByGuideIdOrderByCreatedAtDesc(Long guideId);
 
-    /** Availability check — true if guide already has a live booking on that date */
-    boolean existsByGuideIdAndTourDateAndStatusIn(
-        Long guideId, LocalDate tourDate, Collection<Booking.Status> statuses);
+    /** Availability check — true if guide has a live booking overlapping the requested range */
+    boolean existsByGuideIdAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusIn(
+        Long guideId, LocalDate newEndDate, LocalDate newStartDate, Collection<Booking.Status> statuses);
 
     boolean existsByTouristIdAndGuideUserIdAndStatusNot(
         Long touristId, Long guideUserId, Booking.Status status);

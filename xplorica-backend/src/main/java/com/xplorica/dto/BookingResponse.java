@@ -11,7 +11,8 @@ public class BookingResponse {
     private Long touristId;
     private String guideName;
     private String touristName;
-    private LocalDate tourDate;
+    private LocalDate startDate;
+    private LocalDate endDate;
     private Integer numberOfPeople;
     private Double totalAmount;
     private Double serviceFee;
