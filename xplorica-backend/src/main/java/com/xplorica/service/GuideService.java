@@ -1,5 +1,9 @@
 package com.xplorica.service;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import com.xplorica.dto.GuideAnalyticsResponse;
 import com.xplorica.dto.GuideProfileRequest;
 import com.xplorica.dto.GuideProfileResponse;
@@ -78,24 +82,39 @@ public class GuideService {
         return GuideProfileResponse.from(guideRepo.save(profile));
     }
 
-    public String uploadPhoto(String email, MultipartFile file) {
-        try {
-            User user = userRepo.findByEmail(email).orElseThrow();
-            Path dir = Paths.get(uploadDir).toAbsolutePath().normalize();
-            Files.createDirectories(dir);
-            String filename = "guide_" + user.getId() + "_" + System.currentTimeMillis()
-                + getExtension(file.getOriginalFilename());
-            Files.copy(file.getInputStream(), dir.resolve(filename),
-                StandardCopyOption.REPLACE_EXISTING);
-            String url = "/uploads/" + filename;
-            GuideProfile profile = guideRepo.findByUserId(user.getId()).orElseThrow();
-            profile.setPhotoUrl(url);
-            guideRepo.save(profile);
-            return url;
-        } catch (IOException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Upload failed");
-        }
+@Autowired
+private Cloudinary cloudinary;
+
+public String uploadPhoto(String email, MultipartFile file) {
+    try {
+        User user = userRepo.findByEmail(email)
+                .orElseThrow();
+
+        Map<?, ?> uploadResult = cloudinary.uploader().upload(
+                file.getBytes(),
+                ObjectUtils.asMap(
+                        "folder", "xplorica/guides",
+                        "public_id", "guide_" + user.getId()
+                )
+        );
+
+        String imageUrl = uploadResult.get("secure_url").toString();
+
+        GuideProfile profile = guideRepo.findByUserId(user.getId())
+                .orElseThrow();
+
+        profile.setPhotoUrl(imageUrl);
+        guideRepo.save(profile);
+
+        return imageUrl;
+
+    } catch (IOException e) {
+        throw new ResponseStatusException(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Upload failed"
+        );
     }
+}
 
     @Transactional
     public void rateGuide(String email, Long guideId, RatingRequest req) {

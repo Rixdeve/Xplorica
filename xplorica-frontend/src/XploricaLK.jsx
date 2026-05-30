@@ -1465,7 +1465,7 @@ function GuideDashboard({ user, onNav }) {
 
       {/* Tabs */}
       <div className="flex gap-2 bg-slate-100 rounded-xl p-1 mb-8 w-fit">
-        {[["profile","Profile"],["bookings","Bookings"],["analytics", isPremium ? "📊 Analytics" : "📊 Analytics ⭐"]].map(([k, label]) => (
+        {[["profile","Profile"],["bookings","Bookings"],["analytics", isPremium ? "Analytics" : "Analytics ⭐"]].map(([k, label]) => (
           <button key={k} onClick={() => setTab(k)}
             className={`px-5 py-2 text-sm font-semibold rounded-lg transition
               ${tab === k ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
@@ -1719,7 +1719,6 @@ function GuideDashboard({ user, onNav }) {
         <div>
           {!isPremium ? (
             <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-3xl p-10 border border-amber-200 text-center">
-              <p className="text-4xl mb-4">📊</p>
               <h3 className="text-xl font-bold text-blue-950 mb-2">Analytics is a Premium Feature</h3>
               <p className="text-slate-500 text-sm mb-6">Upgrade to Premium to unlock detailed insights about your bookings, revenue, and tourists.</p>
               <button
@@ -1744,11 +1743,11 @@ function GuideDashboard({ user, onNav }) {
               {/* Stat cards */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 {[
-                  { label: "Total Bookings",   value: analytics.totalBookings,     icon: "📋", bg: "from-blue-50 to-blue-100",      num: "text-blue-800" },
-                  { label: "Completed",        value: analytics.completedTours,    icon: "✅", bg: "from-emerald-50 to-emerald-100", num: "text-emerald-700" },
-                  { label: "Confirmed",        value: analytics.confirmedBookings, icon: "🎟️", bg: "from-indigo-50 to-indigo-100",  num: "text-indigo-700" },
-                  { label: "Pending",          value: analytics.pendingBookings,   icon: "⏳", bg: "from-amber-50 to-amber-100",    num: "text-amber-700" },
-                  { label: "Cancelled",        value: analytics.cancelledBookings, icon: "✕",  bg: "from-slate-50 to-slate-100",    num: "text-slate-600" },
+                  { label: "Total Bookings",   value: analytics.totalBookings,      bg: "from-blue-50 to-blue-100",      num: "text-blue-800" },
+                  { label: "Completed",        value: analytics.completedTours,     bg: "from-emerald-50 to-emerald-100", num: "text-emerald-700" },
+                  { label: "Confirmed",        value: analytics.confirmedBookings,  bg: "from-indigo-50 to-indigo-100",  num: "text-indigo-700" },
+                  { label: "Pending",          value: analytics.pendingBookings,    bg: "from-amber-50 to-amber-100",    num: "text-amber-700" },
+                  { label: "Cancelled",        value: analytics.cancelledBookings,  bg: "from-slate-50 to-slate-100",    num: "text-slate-600" },
                 ].map(m => (
                   <div key={m.label} className={`bg-gradient-to-br ${m.bg} rounded-2xl p-5 border border-white shadow-sm text-center`}>
                     <div className="text-2xl mb-1">{m.icon}</div>
