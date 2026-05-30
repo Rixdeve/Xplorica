@@ -444,12 +444,13 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
   const [reviews, setReviews]             = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
 
-  const [showBookModal, setShowBookModal] = useState(false);
-  const [bookDate, setBookDate]           = useState("");
-  const [bookPeople, setBookPeople]       = useState(1);
-  const [bookMsg, setBookMsg]             = useState("");
-  const [bookLoading, setBookLoading]     = useState(false);
-  const [bookingId, setBookingId]         = useState(null);
+  const [showBookModal, setShowBookModal]     = useState(false);
+  const [bookDate, setBookDate]               = useState("");
+  const [bookPeople, setBookPeople]           = useState(1);
+  const [bookDestination, setBookDestination] = useState("");
+  const [bookMsg, setBookMsg]                 = useState("");
+  const [bookLoading, setBookLoading]         = useState(false);
+  const [bookingId, setBookingId]             = useState(null);
 
   // Load ratings from DB
   useEffect(() => {
@@ -461,7 +462,7 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
 
   const openBookModal = () => {
     if (!user) { onLogin("login"); return; }
-    setBookDate(""); setBookPeople(1); setBookMsg(""); setBookingId(null);
+    setBookDate(""); setBookPeople(1); setBookDestination(""); setBookMsg(""); setBookingId(null);
     setShowBookModal(true);
   };
 
@@ -491,16 +492,16 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
 
   // Create booking in DB
   const createBooking = async () => {
-    if (!bookDate) return;
+    if (!bookDate || !bookDestination) return;
     setBookLoading(true);
     try {
       const rate = guide.dailyRate || 0;
-    const booking = await api.createBooking({
-        guideId:       guide.id,
-        tourDate:      bookDate,
+      const booking = await api.createBooking({
+        guideId:        guide.id,
+        tourDate:       bookDate,
         numberOfPeople: bookPeople,
-        totalAmount:   rate * bookPeople,
-        destination:   (guide.destinations || [])[0] || "",
+        totalAmount:    rate * bookPeople,
+        destination:    bookDestination,
       });
       setBookingId(booking.id);
       setBookMsg("⏳ Booking request sent! Your guide will review and confirm. You can make payment once the guide accepts your booking.");
@@ -633,6 +634,18 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
           <Input label="Tour Date" type="date" value={bookDate} onChange={setBookDate} required />
           <Input label="Number of People" type="number" value={bookPeople}
             onChange={v => setBookPeople(Math.max(1, Number(v)))} required />
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-semibold text-slate-700">Destination <span className="text-red-500">*</span></label>
+            <select
+              value={bookDestination}
+              onChange={e => setBookDestination(e.target.value)}
+              className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+              <option value="">Select a destination…</option>
+              {(guide.destinations || []).map(d => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          </div>
           {(() => {
             const subtotal          = guide.dailyRate ? guide.dailyRate * bookPeople : null;
             const rawFee            = subtotal ? subtotal * 0.15 : null;
@@ -672,7 +685,7 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
                 {bookMsg}
               </div>
             : (
-              <Btn full variant="emerald" disabled={!bookDate || bookLoading} onClick={createBooking}>
+              <Btn full variant="emerald" disabled={!bookDate || !bookDestination || bookLoading} onClick={createBooking}>
                 {bookLoading ? "Creating Booking…" : "Send Booking Request"}
               </Btn>
             )}
