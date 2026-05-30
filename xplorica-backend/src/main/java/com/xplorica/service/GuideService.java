@@ -27,6 +27,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.format.TextStyle;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -170,6 +172,44 @@ public class GuideService {
         r.setTopDestinations(destCounts.entrySet().stream()
             .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
             .map(Map.Entry::getKey).limit(5).collect(Collectors.toList()));
+
+        // ── Monthly revenue & tour count (last 6 months) ──────────────────
+        LinkedHashMap<String, Double>  monthlyRevenue = new LinkedHashMap<>();
+        LinkedHashMap<String, Integer> monthlyTours   = new LinkedHashMap<>();
+        YearMonth now = YearMonth.now();
+        for (int i = 5; i >= 0; i--) {
+            YearMonth ym  = now.minusMonths(i);
+            String label  = ym.getMonth().getDisplayName(TextStyle.SHORT, Locale.ENGLISH) + " '" + String.valueOf(ym.getYear()).substring(2);
+            monthlyRevenue.put(label, 0.0);
+            monthlyTours.put(label, 0);
+        }
+        for (Booking b : bookings) {
+            if (b.getStatus() == Booking.Status.CANCELLED || b.getStartDate() == null) continue;
+            YearMonth ym = YearMonth.from(b.getStartDate());
+            String label = ym.getMonth().getDisplayName(TextStyle.SHORT, Locale.ENGLISH) + " '" + String.valueOf(ym.getYear()).substring(2);
+            if (!monthlyRevenue.containsKey(label)) continue;
+            double net = b.getTotalAmount() != null
+                ? b.getTotalAmount() - (b.getPlatformCommission() != null ? b.getPlatformCommission() : 0)
+                : 0;
+            monthlyRevenue.merge(label, net, Double::sum);
+            if (b.getStatus() == Booking.Status.COMPLETED || b.getStatus() == Booking.Status.CONFIRMED)
+                monthlyTours.merge(label, 1, Integer::sum);
+        }
+        r.setMonthlyRevenue(monthlyRevenue);
+        r.setMonthlyTours(monthlyTours);
+
+        // ── Destination booking counts (sorted desc) ──────────────────────
+        Map<String, Integer> destBookings = bookings.stream()
+            .filter(b -> b.getStatus() != Booking.Status.CANCELLED
+                      && b.getDestination() != null && !b.getDestination().isBlank())
+            .flatMap(b -> Arrays.stream(b.getDestination().split(",\\s*")))
+            .map(String::trim).filter(d -> !d.isBlank())
+            .collect(Collectors.groupingBy(d -> d, Collectors.summingInt(d -> 1)));
+        r.setDestinationBookings(
+            destBookings.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
+                    (a, b2) -> a, LinkedHashMap::new)));
 
         return r;
     }

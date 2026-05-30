@@ -5,6 +5,16 @@ import * as api from "./api.js";
 // ── Design tokens ──────────────────────────────────────────────────────────
 const DESTINATIONS = ["Sigiriya", "Kandy", "Ella", "Galle", "Colombo", "Yala", "Nuwara Eliya", "Mirissa", "Jaffna", "Dambulla", "Adam's Peak", "Anuradhapura", "Polonnaruwa", "Trincomalee", "Horton Plains", "Arugam Bay", "Bentota", "Negombo", "Udawalawe", "Kitulgala", "Kalpitiya"];
 const LANGUAGES    = ["English", "Sinhala", "Tamil", "French", "German", "Japanese", "Mandarin", "Italian", "Hindi", "Spanish", "Russian", "Arabic", "Portuguese"];
+const DESTINATIONS_DATA = [
+  { name: "Sigiriya",     tagline: "Ancient Lion Rock Fortress",       image: "https://images.unsplash.com/photo-1586613835341-f8e6e3d4f9b9?w=800&q=80", tag: "UNESCO Heritage" },
+  { name: "Kandy",        tagline: "Temple of the Sacred Tooth Relic", image: "https://images.unsplash.com/photo-1567157577867-05ccb1388e66?w=800&q=80", tag: "Cultural Capital" },
+  { name: "Ella",         tagline: "Nine Arch Bridge & Tea Trails",    image: "https://images.unsplash.com/photo-1588598198321-9735fd52455b?w=800&q=80", tag: "Hill Country" },
+  { name: "Galle",        tagline: "Dutch Colonial Fort by the Sea",   image: "https://images.unsplash.com/photo-1575994532987-0d3e42c83c40?w=800&q=80", tag: "Historic Fort" },
+  { name: "Mirissa",      tagline: "Whale Watching & Sunset Beaches",  image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80", tag: "Beach Paradise" },
+  { name: "Yala",         tagline: "Leopards & Wildlife Safari",       image: "https://images.unsplash.com/photo-1516426122078-c23e76319801?w=800&q=80", tag: "National Park" },
+  { name: "Nuwara Eliya", tagline: "Tea Plantations & Cool Climate",   image: "https://images.unsplash.com/photo-1566296314736-6eaac1ca0cb9?w=800&q=80", tag: "Tea Country" },
+  { name: "Trincomalee",  tagline: "Crystal Bays & Whale Sharks",      image: "https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&q=80", tag: "East Coast" },
+];
 
 /** Prefix /uploads/... paths with the backend base URL; absolute URLs pass through unchanged. */
 const API_BASE = import.meta.env.VITE_API_URL || 'https://xplorica-production.up.railway.app';
@@ -109,6 +119,52 @@ const Modal = ({ open, onClose, children, title }) => {
   );
 };
 
+// ── Chart components ──────────────────────────────────────────────────────
+const BarChart = ({ data = {}, prefix = "", color = "#2563eb" }) => {
+  const entries = Object.entries(data);
+  const max = Math.max(...entries.map(([, v]) => v), 1);
+  return (
+    <div className="flex items-end gap-1.5 h-36 pt-2 w-full">
+      {entries.map(([label, value]) => {
+        const pct = Math.max((value / max) * 100, value > 0 ? 4 : 1);
+        return (
+          <div key={label} className="flex-1 flex flex-col items-center gap-1 min-w-0 group relative">
+            {value > 0 && (
+              <span className="absolute -top-5 left-1/2 -translate-x-1/2 bg-blue-950 text-white text-[10px] font-bold px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                {prefix}{typeof value === "number" && prefix === "$" ? value.toFixed(0) : value}
+              </span>
+            )}
+            <div className="w-full rounded-t-md transition-all duration-700"
+              style={{ height: `${pct}%`, background: color, minHeight: value > 0 ? 4 : 2, opacity: value > 0 ? 1 : 0.2 }} />
+            <span className="text-slate-400 text-center leading-tight w-full truncate text-center"
+              style={{ fontSize: "0.6rem" }}>{label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const HorizBarChart = ({ data = {}, color = "#2563eb" }) => {
+  const entries = Object.entries(data).slice(0, 8);
+  const max = Math.max(...entries.map(([, v]) => v), 1);
+  return (
+    <div className="space-y-2.5">
+      {entries.map(([label, value]) => (
+        <div key={label} className="flex items-center gap-3">
+          <span className="text-xs font-medium text-slate-700 w-28 truncate shrink-0 text-right">{label}</span>
+          <div className="flex-1 bg-slate-100 rounded-full h-6 overflow-hidden">
+            <div className="h-full rounded-full flex items-center justify-end pr-2.5 transition-all duration-700"
+              style={{ width: `${Math.max((value / max) * 100, 10)}%`, background: color }}>
+              <span className="text-xs text-white font-bold">{value}</span>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const Spinner = () => (
   <div className="flex justify-center items-center py-16">
     <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
@@ -124,6 +180,7 @@ function LandingPage({ onNav, onLogin, onRegister }) {
   const [allGuides, setAllGuides]           = useState([]);
   const [reviews, setReviews]               = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [heroSlide, setHeroSlide]           = useState(0);
 
   useEffect(() => {
     api.listGuides().then(data => setAllGuides(data || [])).catch(() => {});
@@ -131,6 +188,11 @@ function LandingPage({ onNav, onLogin, onRegister }) {
       .then(data => setReviews(data || []))
       .catch(() => setReviews([]))
       .finally(() => setReviewsLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const t = setInterval(() => setHeroSlide(s => (s + 1) % DESTINATIONS_DATA.length), 3500);
+    return () => clearInterval(t);
   }, []);
 
   const premiumGuides = allGuides.filter(g => g.premium);
@@ -168,16 +230,39 @@ function LandingPage({ onNav, onLogin, onRegister }) {
 
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.3 }}
             className="hidden md:block">
-            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-4xl p-4 max-w-sm ml-auto shadow-2xl">
-              <div className="bg-white rounded-3xl p-5">
-                <div className="aspect-video rounded-xl bg-cover bg-center mb-4"
-                  style={{ backgroundImage: "url('https://images.unsplash.com/photo-1588598198321-9735fd52455b?w=600&q=80')" }} />
-                <p className="text-xs font-bold text-emerald-600 mb-1">⭐ Top Rated Guide</p>
-                <h3 className="text-lg font-black text-blue-950">Sigiriya Sunrise Walk</h3>
-                <p className="text-sm text-slate-500 mt-1">Private tour · 6 hours · Cultural Triangle</p>
-                <div className="flex items-center justify-between mt-4">
-                  <span className="font-bold text-blue-800 text-lg">$35 <span className="text-sm font-normal text-slate-500">/ person</span></span>
-                  <Badge color="amber">★ 4.9 (87)</Badge>
+            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-4xl p-3 max-w-sm ml-auto shadow-2xl overflow-hidden">
+              <div className="relative rounded-3xl overflow-hidden" style={{ height: 360 }}>
+                <AnimatePresence mode="wait">
+                  <motion.img
+                    key={heroSlide}
+                    src={DESTINATIONS_DATA[heroSlide].image}
+                    alt={DESTINATIONS_DATA[heroSlide].name}
+                    initial={{ opacity: 0, scale: 1.06 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.97 }}
+                    transition={{ duration: 0.7, ease: "easeInOut" }}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                </AnimatePresence>
+                <div className="absolute inset-0 bg-gradient-to-t from-blue-950/85 via-blue-950/20 to-transparent" />
+                <span className="absolute top-4 left-4 bg-white/90 text-blue-900 text-xs font-bold px-3 py-1 rounded-full">
+                  {DESTINATIONS_DATA[heroSlide].tag}
+                </span>
+                <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <AnimatePresence mode="wait">
+                    <motion.div key={heroSlide}
+                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                      transition={{ duration: 0.4 }}>
+                      <h3 className="text-white font-black text-2xl leading-tight">{DESTINATIONS_DATA[heroSlide].name}</h3>
+                      <p className="text-blue-200 text-sm mt-1">{DESTINATIONS_DATA[heroSlide].tagline}</p>
+                    </motion.div>
+                  </AnimatePresence>
+                  <div className="flex gap-1.5 mt-4">
+                    {DESTINATIONS_DATA.map((_, i) => (
+                      <button key={i} onClick={() => setHeroSlide(i)}
+                        className={`h-1.5 rounded-full transition-all duration-300 ${i === heroSlide ? "w-6 bg-white" : "w-1.5 bg-white/40"}`} />
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -211,89 +296,93 @@ function LandingPage({ onNav, onLogin, onRegister }) {
       </section>
 
       {/* Recommended Destinations */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <p className="text-emerald-600 font-bold text-sm uppercase tracking-wider mb-2">Explore Sri Lanka</p>
-            <h2 className="text-4xl font-black text-blue-950">Recommended Destinations</h2>
-            <p className="text-slate-500 mt-3 max-w-xl mx-auto">From ancient kingdoms to golden beaches — discover the iconic places your guide will bring to life.</p>
-          </div>
-          <div className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory" style={{ scrollbarWidth: "none" }}>
-            {[
-              {
-                name: "Sigiriya",
-                tagline: "Ancient Lion Rock Fortress",
-                image: "https://images.unsplash.com/photo-1586613835341-f8e6e3d4f9b9?w=600&q=80",
-                tag: "UNESCO Heritage",
-              },
-              {
-                name: "Kandy",
-                tagline: "Temple of the Sacred Tooth Relic",
-                image: "https://images.unsplash.com/photo-1567157577867-05ccb1388e66?w=600&q=80",
-                tag: "Cultural Capital",
-              },
-              {
-                name: "Ella",
-                tagline: "Nine Arch Bridge & Tea Trails",
-                image: "https://images.unsplash.com/photo-1588598198321-9735fd52455b?w=600&q=80",
-                tag: "Hill Country",
-              },
-              {
-                name: "Galle",
-                tagline: "Dutch Colonial Fort by the Sea",
-                image: "https://images.unsplash.com/photo-1575994532987-0d3e42c83c40?w=600&q=80",
-                tag: "Historic Fort",
-              },
-              {
-                name: "Mirissa",
-                tagline: "Whale Watching & Sunset Beaches",
-                image: "https://images.unsplash.com/photo-1602734846297-9299fc2d4703?w=600&q=80",
-                tag: "Beach Paradise",
-              },
-              {
-                name: "Yala",
-                tagline: "Leopards & Wildlife Safari",
-                image: "https://images.unsplash.com/photo-1625895197185-efcec01cffe0?w=600&q=80",
-                tag: "National Park",
-              },
-              {
-                name: "Nuwara Eliya",
-                tagline: "Tea Plantations & Cool Climate",
-                image: "https://images.unsplash.com/photo-1566296314736-6eaac1ca0cb9?w=600&q=80",
-                tag: "Tea Country",
-              },
-              {
-                name: "Trincomalee",
-                tagline: "Crystal Bays & Whale Sharks",
-                image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=80",
-                tag: "East Coast",
-              },
-            ].map((d, i) => (
-              <motion.div key={d.name}
-                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
-                whileHover={{ y: -6, scale: 1.02 }}
-                onClick={() => onNav("browse")}
-                className="snap-start shrink-0 w-56 rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer group border border-slate-100">
-                <div className="relative h-72 overflow-hidden">
-                  <img src={d.image} alt={d.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-blue-950/80 via-blue-950/20 to-transparent" />
-                  <span className="absolute top-3 left-3 bg-white/90 text-blue-900 text-xs font-bold px-2.5 py-1 rounded-full">
-                    {d.tag}
-                  </span>
-                  <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <h3 className="text-white font-black text-lg leading-tight">{d.name}</h3>
-                    <p className="text-blue-200 text-xs mt-0.5">{d.tagline}</p>
-                  </div>
+      {(() => {
+        const destRef = useRef(null);
+        const pausedRef = useRef(false);
+        const CARD_W = 244; // 224px card + 20px gap
+
+        useEffect(() => {
+          const el = destRef.current;
+          if (!el) return;
+          const tick = setInterval(() => {
+            if (pausedRef.current) return;
+            if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 10) {
+              el.scrollTo({ left: 0, behavior: "smooth" });
+            } else {
+              el.scrollBy({ left: CARD_W, behavior: "smooth" });
+            }
+          }, 3000);
+          return () => clearInterval(tick);
+        }, []);
+
+        const scroll = (dir) => {
+          destRef.current?.scrollBy({ left: dir * CARD_W, behavior: "smooth" });
+        };
+
+        return (
+          <section className="py-24 bg-white">
+            <div className="max-w-7xl mx-auto px-6">
+              <div className="text-center mb-12">
+                <p className="text-emerald-600 font-bold text-sm uppercase tracking-wider mb-2">Explore Sri Lanka</p>
+                <h2 className="text-4xl font-black text-blue-950">Recommended Destinations</h2>
+                <p className="text-slate-500 mt-3 max-w-xl mx-auto">From ancient kingdoms to golden beaches — discover the iconic places your guide will bring to life.</p>
+              </div>
+
+              <div className="relative">
+                {/* Left button */}
+                <button
+                  onClick={() => scroll(-1)}
+                  onMouseEnter={() => (pausedRef.current = true)}
+                  onMouseLeave={() => (pausedRef.current = false)}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 w-11 h-11 bg-white border border-slate-200 rounded-full shadow-lg flex items-center justify-center text-blue-950 hover:bg-blue-950 hover:text-white hover:border-blue-950 transition-all">
+                  ‹
+                </button>
+
+                {/* Carousel */}
+                <div ref={destRef}
+                  onMouseEnter={() => (pausedRef.current = true)}
+                  onMouseLeave={() => (pausedRef.current = false)}
+                  className="flex gap-5 overflow-x-auto pb-2 snap-x snap-mandatory"
+                  style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+                  {DESTINATIONS_DATA.map((d, i) => (
+                    <motion.div key={d.name}
+                      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+                      whileHover={{ y: -6 }}
+                      onClick={() => onNav("browse")}
+                      className="snap-start shrink-0 w-56 rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer group border border-slate-100">
+                      <div className="relative h-72 overflow-hidden">
+                        <img src={d.image} alt={d.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-blue-950/80 via-blue-950/20 to-transparent" />
+                        <span className="absolute top-3 left-3 bg-white/90 text-blue-900 text-xs font-bold px-2.5 py-1 rounded-full">
+                          {d.tag}
+                        </span>
+                        <div className="absolute bottom-0 left-0 right-0 p-4">
+                          <h3 className="text-white font-black text-lg leading-tight">{d.name}</h3>
+                          <p className="text-blue-200 text-xs mt-0.5">{d.tagline}</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
-              </motion.div>
-            ))}
-          </div>
-          <div className="text-center mt-8">
-            <Btn variant="primary" onClick={() => onNav("browse")}>Find a Guide for Your Destination</Btn>
-          </div>
-        </div>
-      </section>
+
+                {/* Right button */}
+                <button
+                  onClick={() => scroll(1)}
+                  onMouseEnter={() => (pausedRef.current = true)}
+                  onMouseLeave={() => (pausedRef.current = false)}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 w-11 h-11 bg-white border border-slate-200 rounded-full shadow-lg flex items-center justify-center text-blue-950 hover:bg-blue-950 hover:text-white hover:border-blue-950 transition-all">
+                  ›
+                </button>
+              </div>
+
+              <div className="text-center mt-10">
+                <Btn variant="primary" onClick={() => onNav("browse")}>Find a Guide for Your Destination</Btn>
+              </div>
+            </div>
+          </section>
+        );
+      })()}
 
       {/* Premium Guides Carousel */}
       {premiumGuides.length > 0 && (
@@ -1253,6 +1342,7 @@ function GuideDashboard({ user, onNav }) {
   const [subscribing, setSubscribing]         = useState(false);
   const [analytics, setAnalytics]             = useState(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [chartMode, setChartMode]             = useState("revenue"); // "revenue" | "tours"
 
   const setF = k => v => setForm(p => ({ ...p, [k]: v }));
   const toggleItem = (key, val) => setForm(p => ({
@@ -1625,48 +1715,93 @@ function GuideDashboard({ user, onNav }) {
             <p className="text-slate-400 text-sm">Could not load analytics.</p>
           ) : (
             <div className="space-y-6">
-              {/* Metric cards */}
+              {/* Stat cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  { label: "Total Bookings",    value: analytics.totalBookings,    color: "blue" },
-                  { label: "Completed Tours",   value: analytics.completedTours,   color: "emerald" },
-                  { label: "Pending",           value: analytics.pendingBookings,  color: "amber" },
-                  { label: "Cancelled",         value: analytics.cancelledBookings, color: "slate" },
+                  { label: "Total Bookings",  value: analytics.totalBookings,    icon: "📋", bg: "from-blue-50 to-blue-100",    num: "text-blue-800" },
+                  { label: "Completed Tours", value: analytics.completedTours,   icon: "✅", bg: "from-emerald-50 to-emerald-100", num: "text-emerald-700" },
+                  { label: "Pending",         value: analytics.pendingBookings,  icon: "⏳", bg: "from-amber-50 to-amber-100",  num: "text-amber-700" },
+                  { label: "Cancelled",       value: analytics.cancelledBookings, icon: "✕", bg: "from-slate-50 to-slate-100",  num: "text-slate-600" },
                 ].map(m => (
-                  <div key={m.label} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 text-center">
-                    <p className="text-3xl font-black text-blue-950">{m.value}</p>
+                  <div key={m.label} className={`bg-gradient-to-br ${m.bg} rounded-2xl p-5 border border-white shadow-sm text-center`}>
+                    <div className="text-2xl mb-1">{m.icon}</div>
+                    <p className={`text-3xl font-black ${m.num}`}>{m.value}</p>
                     <p className="text-xs text-slate-500 mt-1">{m.label}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                {/* Revenue */}
+              {/* Monthly chart */}
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <h3 className="font-bold text-blue-950">Monthly Overview</h3>
+                    <p className="text-xs text-slate-400 mt-0.5">Last 6 months — hover bars for exact values</p>
+                  </div>
+                  <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
+                    {[["revenue","💰 Revenue"],["tours","🗺 Tours"]].map(([k, lbl]) => (
+                      <button key={k} onClick={() => setChartMode(k)}
+                        className={`px-4 py-1.5 text-xs font-semibold rounded-lg transition ${chartMode === k ? "bg-white shadow text-blue-800" : "text-slate-500 hover:text-slate-700"}`}>
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <BarChart
+                  data={chartMode === "revenue" ? analytics.monthlyRevenue : analytics.monthlyTours}
+                  prefix={chartMode === "revenue" ? "$" : ""}
+                  color={chartMode === "revenue" ? "#10b981" : "#2563eb"}
+                />
+                {chartMode === "revenue" && (
+                  <p className="text-right text-xs text-slate-400 mt-2">
+                    Total earned: <span className="font-bold text-emerald-600">${analytics.totalRevenue.toFixed(2)}</span>
+                    &nbsp;·&nbsp; People served: <span className="font-semibold">{analytics.totalPeopleServed}</span>
+                    &nbsp;·&nbsp; Unique tourists: <span className="font-semibold">{analytics.uniqueTourists}</span>
+                  </p>
+                )}
+              </div>
+
+              {/* Destination bookings chart */}
+              {analytics.destinationBookings && Object.keys(analytics.destinationBookings).length > 0 ? (
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                  <h3 className="font-bold text-blue-950 mb-4">Earnings</h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between"><span className="text-slate-500">Total Revenue (after commission)</span><span className="font-bold text-emerald-600">${analytics.totalRevenue.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-500">Total People Served</span><span className="font-semibold">{analytics.totalPeopleServed}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-500">Unique Tourists</span><span className="font-semibold">{analytics.uniqueTourists}</span></div>
+                  <div className="mb-5">
+                    <h3 className="font-bold text-blue-950">Bookings by Destination</h3>
+                    <p className="text-xs text-slate-400 mt-0.5">How many tours each location has received</p>
+                  </div>
+                  <HorizBarChart data={analytics.destinationBookings} color="#6366f1" />
+                </div>
+              ) : null}
+
+              {/* Performance summary */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                  <h3 className="font-bold text-blue-950 mb-4">Rating & Reviews</h3>
+                  <div className="flex items-center gap-4 mb-4">
+                    <span className="text-5xl font-black text-amber-500">{analytics.averageRating.toFixed(1)}</span>
+                    <div>
+                      <Stars rating={Math.round(analytics.averageRating)} size="sm" />
+                      <p className="text-xs text-slate-400 mt-1">{analytics.totalReviews} review{analytics.totalReviews !== 1 ? "s" : ""}</p>
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-sm border-t border-slate-100 pt-3">
+                    <span className="text-slate-500">Confirmed Bookings</span>
+                    <span className="font-semibold">{analytics.confirmedBookings}</span>
                   </div>
                 </div>
 
-                {/* Ratings & Destinations */}
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                  <h3 className="font-bold text-blue-950 mb-4">Performance</h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between"><span className="text-slate-500">Average Rating</span><span className="font-bold text-amber-500">★ {analytics.averageRating.toFixed(1)}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-500">Total Reviews</span><span className="font-semibold">{analytics.totalReviews}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-500">Confirmed Bookings</span><span className="font-semibold">{analytics.confirmedBookings}</span></div>
-                  </div>
-                  {analytics.topDestinations?.length > 0 && (
-                    <div className="mt-4">
-                      <p className="text-xs text-slate-400 mb-2">Top Destinations</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {analytics.topDestinations.map(d => <Badge key={d} color="blue">{d}</Badge>)}
-                      </div>
+                  <h3 className="font-bold text-blue-950 mb-4">Top Destinations</h3>
+                  {analytics.topDestinations?.length > 0 ? (
+                    <div className="space-y-2">
+                      {analytics.topDestinations.map((d, i) => (
+                        <div key={d} className="flex items-center gap-3">
+                          <span className="text-xs font-black text-slate-400 w-5">#{i + 1}</span>
+                          <span className="flex-1 text-sm font-medium text-slate-700">{d}</span>
+                          <Badge color={i === 0 ? "amber" : i === 1 ? "blue" : "slate"}>{i === 0 ? "🏆 Top" : i === 1 ? "🥈" : "🥉"}</Badge>
+                        </div>
+                      ))}
                     </div>
-                  )}
+                  ) : <p className="text-slate-400 text-sm">No bookings with destinations yet.</p>}
                 </div>
               </div>
             </div>
