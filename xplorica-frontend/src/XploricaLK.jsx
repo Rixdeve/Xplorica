@@ -680,16 +680,17 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
               </div>
             );
           })()}
-          {bookMsg
-            ? <div className={`${bookMsg.startsWith("❌") ? "bg-red-50 text-red-700" : "bg-blue-50 text-blue-700"} rounded-xl p-3 text-sm font-medium`}>
-                {bookMsg}
-              </div>
-            : (
-              <Btn full variant="emerald" disabled={!bookDate || !bookDestination || bookLoading} onClick={createBooking}>
-                {bookLoading ? "Creating Booking…" : "Send Booking Request"}
-              </Btn>
-            )}
-          {bookMsg && !bookMsg.startsWith("❌") && bookingId && user && (
+          {bookMsg && (
+            <div className={`${bookMsg.startsWith("❌") ? "bg-red-50 text-red-700" : "bg-blue-50 text-blue-700"} rounded-xl p-3 text-sm font-medium`}>
+              {bookMsg}
+            </div>
+          )}
+          {!bookingId && (
+            <Btn full variant="emerald" disabled={!bookDate || !bookDestination || bookLoading} onClick={createBooking}>
+              {bookLoading ? "Creating Booking…" : "Send Booking Request"}
+            </Btn>
+          )}
+          {bookingId && user && (
             <Btn full variant="outline"
               onClick={() => { setShowBookModal(false); if (user.role === "TOURIST") onNav("my-bookings"); }}>
               View My Bookings
