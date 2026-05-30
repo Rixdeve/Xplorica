@@ -12,7 +12,7 @@ const DESTINATIONS_DATA = [
   { name: "Galle",        tagline: "Dutch Colonial Fort by the Sea",   image: "https://www.honeymoonguidesrilanka.com/wp-content/uploads/2024/07/The-Best-Beaches-in-Galle-1200x630-1.jpg", tag: "Historic Fort" },
   { name: "Mirissa",      tagline: "Whale Watching & Sunset Beaches",  image: "https://images.squarespace-cdn.com/content/v1/596b2969d2b85786e6892853/1531738844396-H040L4I7S80ZGQV196K4/DJI_0780.jpg?format=1500w", tag: "Beach Paradise" },
   { name: "Yala",         tagline: "Leopards & Wildlife Safari",       image: "https://photos.tpn.to/fk/pt/em/ot/800x450.jpg", tag: "National Park" },
-  { name: "Nuwara Eliya", tagline: "Tea Plantations & Cool Climate",   image: "https://www.indoasia-tours.com/wp-content/uploads/2021/01/Cover-Image.jpg", tag: "Tea Country" },
+  { name: "Nuwara Eliya", tagline: "Tea Plantations & Cool Climate",   image: "https://cdn.audleytravel.com/1050/750/79/1333687-nuwara-eliya-tea-estate.webp", tag: "Tea Country" },
   { name: "Trincomalee",  tagline: "Crystal Bays & Whale Sharks",      image: "https://i0.wp.com/blog.worldholidayvibes.com/wp-content/uploads/2024/08/Trincomalee-BeachTrincomalee-Tourist-Places-World-Holiday-Vibes-Blog-1024x580.jpg?resize=1024%2C580&ssl=1", tag: "East Coast" },
 ];
 
@@ -191,7 +191,7 @@ function LandingPage({ onNav, onLogin, onRegister }) {
   }, []);
 
   useEffect(() => {
-    const t = setInterval(() => setHeroSlide(s => s + 1), 3500);
+    const t = setInterval(() => setHeroSlide(s => s + 1), 5500);
     return () => clearInterval(t);
   }, []);
 
@@ -230,18 +230,38 @@ function LandingPage({ onNav, onLogin, onRegister }) {
             </div>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.3 }}
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.9 }}
             className="hidden md:block">
             {(() => {
-              const STATIC_REVIEWS = [
-                { touristName: "Sarah M.",  guideName: "Nuwan Perera",   stars: 5, comment: "Our guide made Sigiriya unforgettable. He knew hidden paths no tourist ever finds alone. Truly a once-in-a-lifetime morning.", location: "Sigiriya" },
-                { touristName: "James K.",  guideName: "Chamara Silva",  stars: 5, comment: "Three days through Ella and the tea country — absolutely world class. Local knowledge you simply cannot get from a travel app.", location: "Ella" },
-                { touristName: "Hana L.",   guideName: "Saman Fernando", stars: 5, comment: "Yala safari with a real local guide changed everything. We spotted four leopards in a single morning. Breathtaking.", location: "Yala" },
-                { touristName: "Marco D.",  guideName: "Priya Bandara",  stars: 5, comment: "Galle Fort after dark with a local storyteller — the history came alive in a way no guidebook ever could. Highly recommend.", location: "Galle" },
+              const TESTIMONIALS = [
+                {
+                  name: "Emily Hartwell", country: "United Kingdom",
+                  photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&q=80",
+                  comment: "Xplorica completely transformed how I travel. Finding a trusted local guide used to take days of research — here it took minutes. The whole platform is beautifully designed and genuinely trustworthy.",
+                },
+                {
+                  name: "Marcus Lindström", country: "Sweden",
+                  photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&q=80",
+                  comment: "I was sceptical about using a booking platform for something as personal as a guided tour. Xplorica proved me completely wrong. The verified profiles, direct messaging, and seamless payment gave me total confidence.",
+                },
+                {
+                  name: "Yuki Nakamura", country: "Japan",
+                  photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=120&q=80",
+                  comment: "What makes Xplorica stand out is how human it feels. Real guides, real reviews, real conversations. It connected me with experiences I could never have arranged on my own. I will use it every time I visit Sri Lanka.",
+                },
+                {
+                  name: "Amira El-Sayed", country: "Germany",
+                  photo: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=120&q=80",
+                  comment: "As a solo traveller, safety matters most to me. Xplorica's verification process and honest review system gave me complete peace of mind. The platform handled everything — booking, communication, payment — flawlessly.",
+                },
+                {
+                  name: "David Okafor", country: "Australia",
+                  photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&q=80",
+                  comment: "I used Xplorica to plan a two-week Sri Lanka itinerary and it exceeded every expectation. The service is intuitive, the guides are exceptional, and the support throughout was outstanding. Already recommending it to everyone.",
+                },
               ];
-              const pool = reviews.length > 0 ? reviews : STATIC_REVIEWS;
-              const r    = pool[heroSlide % pool.length];
-              const idx  = heroSlide % pool.length;
+              const r   = TESTIMONIALS[heroSlide % TESTIMONIALS.length];
+              const idx = heroSlide % TESTIMONIALS.length;
               return (
                 <div className="max-w-sm ml-auto">
                   <AnimatePresence mode="wait">
@@ -251,37 +271,24 @@ function LandingPage({ onNav, onLogin, onRegister }) {
                       className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-4xl p-7 shadow-2xl">
 
                       {/* Quote mark */}
-                      <div className="text-6xl font-black text-emerald-400 leading-none mb-2 select-none" style={{ fontFamily: "Georgia, serif" }}>"</div>
+                      <div className="text-6xl font-black text-emerald-400 leading-none mb-3 select-none" style={{ fontFamily: "Georgia, serif" }}>"</div>
 
-                      {/* Review text */}
-                      <p className="text-white text-base leading-relaxed italic">
-                        {r.comment || "An amazing experience with a knowledgeable local guide."}
-                      </p>
-
-                      {/* Stars */}
-                      <div className="flex gap-0.5 mt-5">
-                        {[1,2,3,4,5].map(n => (
-                          <span key={n} className={`text-lg ${n <= (r.stars || 5) ? "text-amber-400" : "text-white/20"}`}>★</span>
-                        ))}
-                      </div>
+                      {/* Testimonial text */}
+                      <p className="text-white text-base leading-relaxed italic">{r.comment}</p>
 
                       {/* Reviewer */}
-                      <div className="flex items-center gap-3 mt-5 pt-5 border-t border-white/15">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-emerald-400 flex items-center justify-center text-white font-bold text-sm shrink-0">
-                          {(r.touristName || "T")[0]}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-white font-bold text-sm truncate">{r.touristName || "Traveller"}</p>
-                          <p className="text-white/60 text-xs truncate">
-                            Toured with <span className="text-emerald-300">{r.guideName || r.guideName}</span>
-                            {r.location && <span> · 📍 {r.location}</span>}
-                          </p>
+                      <div className="flex items-center gap-4 mt-6 pt-6 border-t border-white/15">
+                        <img src={r.photo} alt={r.name}
+                          className="w-12 h-12 rounded-full object-cover shrink-0 ring-2 ring-white/30" />
+                        <div>
+                          <p className="text-white font-bold text-sm">{r.name}</p>
+                          <p className="text-white/60 text-xs mt-0.5">🌍 {r.country}</p>
                         </div>
                       </div>
 
                       {/* Dot indicators */}
                       <div className="flex gap-1.5 mt-5">
-                        {pool.map((_, i) => (
+                        {TESTIMONIALS.map((_, i) => (
                           <button key={i} onClick={() => setHeroSlide(i)}
                             className={`h-1 rounded-full transition-all duration-300 ${i === idx ? "w-6 bg-white" : "w-2 bg-white/30"}`} />
                         ))}
