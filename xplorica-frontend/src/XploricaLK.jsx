@@ -210,6 +210,91 @@ function LandingPage({ onNav, onLogin, onRegister }) {
         </div>
       </section>
 
+      {/* Recommended Destinations */}
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <p className="text-emerald-600 font-bold text-sm uppercase tracking-wider mb-2">Explore Sri Lanka</p>
+            <h2 className="text-4xl font-black text-blue-950">Recommended Destinations</h2>
+            <p className="text-slate-500 mt-3 max-w-xl mx-auto">From ancient kingdoms to golden beaches — discover the iconic places your guide will bring to life.</p>
+          </div>
+          <div className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory" style={{ scrollbarWidth: "none" }}>
+            {[
+              {
+                name: "Sigiriya",
+                tagline: "Ancient Lion Rock Fortress",
+                image: "https://images.unsplash.com/photo-1586613835341-f8e6e3d4f9b9?w=600&q=80",
+                tag: "UNESCO Heritage",
+              },
+              {
+                name: "Kandy",
+                tagline: "Temple of the Sacred Tooth Relic",
+                image: "https://images.unsplash.com/photo-1567157577867-05ccb1388e66?w=600&q=80",
+                tag: "Cultural Capital",
+              },
+              {
+                name: "Ella",
+                tagline: "Nine Arch Bridge & Tea Trails",
+                image: "https://images.unsplash.com/photo-1588598198321-9735fd52455b?w=600&q=80",
+                tag: "Hill Country",
+              },
+              {
+                name: "Galle",
+                tagline: "Dutch Colonial Fort by the Sea",
+                image: "https://images.unsplash.com/photo-1575994532987-0d3e42c83c40?w=600&q=80",
+                tag: "Historic Fort",
+              },
+              {
+                name: "Mirissa",
+                tagline: "Whale Watching & Sunset Beaches",
+                image: "https://images.unsplash.com/photo-1602734846297-9299fc2d4703?w=600&q=80",
+                tag: "Beach Paradise",
+              },
+              {
+                name: "Yala",
+                tagline: "Leopards & Wildlife Safari",
+                image: "https://images.unsplash.com/photo-1625895197185-efcec01cffe0?w=600&q=80",
+                tag: "National Park",
+              },
+              {
+                name: "Nuwara Eliya",
+                tagline: "Tea Plantations & Cool Climate",
+                image: "https://images.unsplash.com/photo-1566296314736-6eaac1ca0cb9?w=600&q=80",
+                tag: "Tea Country",
+              },
+              {
+                name: "Trincomalee",
+                tagline: "Crystal Bays & Whale Sharks",
+                image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=80",
+                tag: "East Coast",
+              },
+            ].map((d, i) => (
+              <motion.div key={d.name}
+                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
+                whileHover={{ y: -6, scale: 1.02 }}
+                onClick={() => onNav("browse")}
+                className="snap-start shrink-0 w-56 rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer group border border-slate-100">
+                <div className="relative h-72 overflow-hidden">
+                  <img src={d.image} alt={d.name}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-blue-950/80 via-blue-950/20 to-transparent" />
+                  <span className="absolute top-3 left-3 bg-white/90 text-blue-900 text-xs font-bold px-2.5 py-1 rounded-full">
+                    {d.tag}
+                  </span>
+                  <div className="absolute bottom-0 left-0 right-0 p-4">
+                    <h3 className="text-white font-black text-lg leading-tight">{d.name}</h3>
+                    <p className="text-blue-200 text-xs mt-0.5">{d.tagline}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+          <div className="text-center mt-8">
+            <Btn variant="primary" onClick={() => onNav("browse")}>Find a Guide for Your Destination</Btn>
+          </div>
+        </div>
+      </section>
+
       {/* Premium Guides Carousel */}
       {premiumGuides.length > 0 && (
         <section className="py-20 bg-gradient-to-br from-amber-50 to-yellow-50 border-y border-amber-100">
