@@ -1114,9 +1114,8 @@ function GuideDashboard({ user, onNav }) {
   const [saveError, setSaveError]           = useState("");
   const [saving, setSaving]                 = useState(false);
 
-  // Bookings + messages
-  const [bookings, setBookings]   = useState([]);
-  const [partners, setPartners]   = useState([]);
+  // Bookings
+  const [bookings, setBookings]       = useState([]);
   const [dataLoading, setDataLoading] = useState(false);
 
   const setF = k => v => setForm(p => ({ ...p, [k]: v }));
@@ -1145,24 +1144,12 @@ function GuideDashboard({ user, onNav }) {
       .finally(() => setProfileLoading(false));
   }, [user.guideProfileId]);
 
-  // Load bookings / messages when tab changes
+  // Load bookings when tab changes
   useEffect(() => {
     if (tab === "bookings") {
       setDataLoading(true);
       api.getMyBookings().then(setBookings).catch(() => {}).finally(() => setDataLoading(false));
-    } else if (tab === "messages") {
-      setDataLoading(true);
-      api.getChatPartners().then(setPartners).catch(() => {}).finally(() => setDataLoading(false));
     }
-  }, [tab]);
-
-  // Auto-refresh messages every 5 seconds when on messages tab
-  useEffect(() => {
-    if (tab !== "messages") return;
-    const interval = setInterval(() => {
-      api.getChatPartners().then(setPartners).catch(() => {});
-    }, 5000);
-    return () => clearInterval(interval);
   }, [tab]);
 
   const handlePhotoChange = (e) => {
@@ -1221,7 +1208,7 @@ function GuideDashboard({ user, onNav }) {
 
       {/* Tabs */}
       <div className="flex gap-2 bg-slate-100 rounded-xl p-1 mb-8 w-fit">
-        {[["profile","Profile"],["bookings","Bookings"],["messages","Messages"]].map(([k, label]) => (
+        {[["profile","Profile"],["bookings","Bookings"]].map(([k, label]) => (
           <button key={k} onClick={() => setTab(k)}
             className={`px-5 py-2 text-sm font-semibold rounded-lg transition
               ${tab === k ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
@@ -1422,49 +1409,6 @@ function GuideDashboard({ user, onNav }) {
         </div>
       )}
 
-      {/* ── Messages Tab ── */}
-      {tab === "messages" && (
-        <div className="bg-white rounded-3xl p-7 shadow-sm border border-slate-100">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="font-bold text-blue-950 text-lg">Messages</h2>
-              {partners.length > 0 && (
-                <p className="text-sm text-slate-500">{partners.length} conversation{partners.length !== 1 ? 's' : ''}</p>
-              )}
-            </div>
-            <button
-              onClick={() => {
-                setDataLoading(true);
-                api.getChatPartners().then(setPartners).catch(() => {}).finally(() => setDataLoading(false));
-              }}
-              className="text-sm text-blue-600 hover:text-blue-700 font-semibold">
-              🔄 Refresh
-            </button>
-          </div>
-          {dataLoading ? <Spinner /> : partners.length === 0
-            ? <p className="text-slate-400 text-sm">No conversations yet.</p>
-            : (
-              <div className="space-y-2">
-                {partners.map(p => (
-                  <div key={p.id}
-                    className="flex items-center gap-4 p-4 hover:bg-slate-50 rounded-2xl cursor-pointer transition border border-transparent hover:border-blue-100">
-                    <Avatar name={p.fullName} size={44} />
-                    <div className="flex-1 min-w-0"
-                      onClick={() => onNav("chat", { userId: p.id, fullName: p.fullName })}>
-                      <p className="font-semibold text-blue-950">{p.fullName}</p>
-                      <p className="text-sm text-slate-500">Click to view conversation</p>
-                    </div>
-                    <button
-                      onClick={() => onNav("chat", { userId: p.id, fullName: p.fullName })}
-                      className="text-blue-600 hover:text-blue-700 font-semibold text-sm px-4 py-2 rounded-lg hover:bg-blue-50 transition">
-                      Open Chat →
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-        </div>
-      )}
     </div>
   );
 }
