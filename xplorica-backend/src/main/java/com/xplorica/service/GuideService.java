@@ -45,8 +45,7 @@ public class GuideService {
     private final RatingRepository ratingRepo;
     private final BookingRepository bookingRepo;
 
-    @Value("${app.upload.dir}")
-    private String uploadDir;
+
 
     public List<GuideProfileResponse> filterGuides(String language, String destination, Double minRating) {
         return guideRepo.filterGuides(language, destination, minRating)
@@ -82,8 +81,8 @@ public class GuideService {
         return GuideProfileResponse.from(guideRepo.save(profile));
     }
 
-@Autowired
-private Cloudinary cloudinary;
+private final Cloudinary cloudinary;
+
 
 public String uploadPhoto(String email, MultipartFile file) {
     try {

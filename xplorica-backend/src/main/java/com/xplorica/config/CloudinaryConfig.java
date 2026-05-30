@@ -1,5 +1,7 @@
 package com.xplorica.config;
 
+import java.util.HashMap;
+import java.util.Map;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Value;
