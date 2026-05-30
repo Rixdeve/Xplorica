@@ -99,9 +99,9 @@ public class BookingService {
             GuideProfile guideProfile = guideRepo.findByUserId(user.getId()).orElseThrow();
             if (!b.getGuide().getId().equals(guideProfile.getId()))
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This is not your booking");
-            if (status != Booking.Status.CONFIRMED && status != Booking.Status.CANCELLED)
+            if (status != Booking.Status.CONFIRMED && status != Booking.Status.CANCELLED && status != Booking.Status.COMPLETED)
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Guide can only accept (CONFIRMED) or reject (CANCELLED) a booking");
+                    "Guide can only confirm, complete, or cancel a booking");
         } else {
             if (!b.getTourist().getId().equals(user.getId()))
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This is not your booking");
