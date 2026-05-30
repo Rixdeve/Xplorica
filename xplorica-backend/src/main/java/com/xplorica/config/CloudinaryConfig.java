@@ -1,4 +1,4 @@
-package com.xplorica.config;
+package com.xplorica.xplorica-backend.config;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
