@@ -2181,12 +2181,9 @@ function Navbar({ user, page, onNav, onLogin, onLogout }) {
   return (
     <nav className="fixed top-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-100">
       <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
-        <button onClick={() => onNav("home")} className="flex items-center gap-2">
-          <div className="w-9 h-9 bg-linear-to-br from-blue-700 to-emerald-500 rounded-xl flex items-center justify-center text-white font-black text-lg shadow">X</div>
-          <div>
-            <p className="text-sm font-black text-blue-950 leading-none">Xplorica LK</p>
-            <p className="text-xs text-emerald-700 leading-none">Explore Sri Lanka</p>
-          </div>
+        <button onClick={() => onNav("home")} className="flex items-center">
+          <img src="https://res.cloudinary.com/de6869utj/image/upload/v1780316235/X_PLORICA_LK_a6wxka.png"
+            alt="Xplorica LK" className="h-10 w-auto object-contain" />
         </button>
 
         <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
@@ -2248,7 +2245,8 @@ function Footer({ onNav }) {
     <footer className="bg-slate-950 text-slate-400 py-12 px-6">
       <div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-8">
         <div>
-          <h3 className="text-xl font-black text-white mb-3">Xplorica LK</h3>
+          <img src="https://res.cloudinary.com/de6869utj/image/upload/v1780316235/X_PLORICA_LK_a6wxka.png"
+            alt="Xplorica LK" className="h-10 w-auto object-contain mb-3 brightness-0 invert" />
           <p className="text-sm leading-relaxed">Connecting travellers with verified Sri Lankan local guides.</p>
         </div>
         <div>
