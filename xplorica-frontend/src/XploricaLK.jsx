@@ -6,7 +6,7 @@ import * as api from "./api.js";
 const DESTINATIONS = ["Sigiriya", "Kandy", "Ella", "Galle", "Colombo", "Yala", "Nuwara Eliya", "Mirissa", "Jaffna", "Dambulla", "Adam's Peak", "Anuradhapura", "Polonnaruwa", "Trincomalee", "Horton Plains", "Arugam Bay", "Bentota", "Negombo", "Udawalawe", "Kitulgala", "Kalpitiya"];
 const LANGUAGES    = ["English", "Sinhala", "Tamil", "French", "German", "Japanese", "Mandarin", "Italian", "Hindi", "Spanish", "Russian", "Arabic", "Portuguese"];
 const DESTINATIONS_DATA = [
-  { name: "Sigiriya",     tagline: "Ancient Lion Rock Fortress",       image: "https://res.cloudinary.com/de6869utj/image/upload/v1780413291/sigiriya_hj1dpi.webp" },
+  { name: "Sigiriya",     tagline: "Ancient Lion Rock Fortress",       image: "https://res.cloudinary.com/de6869utj/image/upload/v1780413291/sigiriya_hj1dpi.webp", tag: "UNESCO Heritage" },
   { name: "Kandy",        tagline: "Temple of the Sacred Tooth Relic", image: "https://res.cloudinary.com/de6869utj/image/upload/v1780413290/kandy_xvjfjx.jpg", tag: "Cultural Capital" },
   { name: "Ella",         tagline: "Nine Arch Bridge & Tea Trails",    image: "https://res.cloudinary.com/de6869utj/image/upload/v1780413290/galle_a95kax.jpg", tag: "Hill Country" },
   { name: "Galle",        tagline: "Dutch Colonial Fort by the Sea",   image: "https://res.cloudinary.com/de6869utj/image/upload/v1780413290/galle_a95kax.jpg", tag: "Historic Fort" },
