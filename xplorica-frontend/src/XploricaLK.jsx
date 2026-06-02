@@ -6,14 +6,14 @@ import * as api from "./api.js";
 const DESTINATIONS = ["Sigiriya", "Kandy", "Ella", "Galle", "Colombo", "Yala", "Nuwara Eliya", "Mirissa", "Jaffna", "Dambulla", "Adam's Peak", "Anuradhapura", "Polonnaruwa", "Trincomalee", "Horton Plains", "Arugam Bay", "Bentota", "Negombo", "Udawalawe", "Kitulgala", "Kalpitiya"];
 const LANGUAGES    = ["English", "Sinhala", "Tamil", "French", "German", "Japanese", "Mandarin", "Italian", "Hindi", "Spanish", "Russian", "Arabic", "Portuguese"];
 const DESTINATIONS_DATA = [
-  { name: "Sigiriya",     tagline: "Ancient Lion Rock Fortress",       image: "https://www.outofoffice.com/wp-content/uploads/sigiriya-459197_1920-jpg.webp", tag: "UNESCO Heritage" },
-  { name: "Kandy",        tagline: "Temple of the Sacred Tooth Relic", image: "https://thatswhatshehad.com/wp-content/uploads/2018/07/chathura-anuradha-subasinghe-40uQmE9Zq8g-unsplash-1024x683.jpg", tag: "Cultural Capital" },
-  { name: "Ella",         tagline: "Nine Arch Bridge & Tea Trails",    image: "https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg?w=800&q=80", tag: "Hill Country" },
-  { name: "Galle",        tagline: "Dutch Colonial Fort by the Sea",   image: "https://www.honeymoonguidesrilanka.com/wp-content/uploads/2024/07/The-Best-Beaches-in-Galle-1200x630-1.jpg", tag: "Historic Fort" },
-  { name: "Mirissa",      tagline: "Whale Watching & Sunset Beaches",  image: "https://images.squarespace-cdn.com/content/v1/596b2969d2b85786e6892853/1531738844396-H040L4I7S80ZGQV196K4/DJI_0780.jpg?format=1500w", tag: "Beach Paradise" },
-  { name: "Yala",         tagline: "Leopards & Wildlife Safari",       image: "https://photos.tpn.to/fk/pt/em/ot/800x450.jpg", tag: "National Park" },
-  { name: "Nuwara Eliya", tagline: "Tea Plantations & Cool Climate",   image: "https://cdn.audleytravel.com/1050/750/79/1333687-nuwara-eliya-tea-estate.webp", tag: "Tea Country" },
-  { name: "Trincomalee",  tagline: "Crystal Bays & Whale Sharks",      image: "https://i0.wp.com/blog.worldholidayvibes.com/wp-content/uploads/2024/08/Trincomalee-BeachTrincomalee-Tourist-Places-World-Holiday-Vibes-Blog-1024x580.jpg?resize=1024%2C580&ssl=1", tag: "East Coast" },
+  { name: "Sigiriya",     tagline: "Ancient Lion Rock Fortress",       image: "https://res.cloudinary.com/de6869utj/image/upload/v1780413291/sigiriya_hj1dpi.webp" },
+  { name: "Kandy",        tagline: "Temple of the Sacred Tooth Relic", image: "https://res.cloudinary.com/de6869utj/image/upload/v1780413290/kandy_xvjfjx.jpg", tag: "Cultural Capital" },
+  { name: "Ella",         tagline: "Nine Arch Bridge & Tea Trails",    image: "https://res.cloudinary.com/de6869utj/image/upload/v1780413290/galle_a95kax.jpg", tag: "Hill Country" },
+  { name: "Galle",        tagline: "Dutch Colonial Fort by the Sea",   image: "https://res.cloudinary.com/de6869utj/image/upload/v1780413290/galle_a95kax.jpg", tag: "Historic Fort" },
+  { name: "Mirissa",      tagline: "Whale Watching & Sunset Beaches",  image: "https://res.cloudinary.com/de6869utj/image/upload/v1780413291/mirissa_wz12my.webp", tag: "Beach Paradise" },
+  { name: "Yala",         tagline: "Leopards & Wildlife Safari",       image: "https://res.cloudinary.com/de6869utj/image/upload/v1780413292/yala_rimytw.jpg", tag: "National Park" },
+  { name: "Nuwara Eliya", tagline: "Tea Plantations & Cool Climate",   image: "https://res.cloudinary.com/de6869utj/image/upload/v1780413291/nuwarae_pyqz7t.webp", tag: "Tea Country" },
+  { name: "Trincomalee",  tagline: "Crystal Bays & Whale Sharks",      image: "https://res.cloudinary.com/de6869utj/image/upload/v1780413485/trincom_d76dzo.webp", tag: "East Coast" },
 ];
 
 /** Prefix /uploads/... paths with the backend base URL; absolute URLs pass through unchanged. */
@@ -321,8 +321,7 @@ function LandingPage({ onNav, onLogin, onRegister }) {
           }}>
             {/* Sigiriya — spans both rows */}
             <motion.div whileHover={{ scale: 1.01 }} transition={{ duration: 0.3 }}
-              onClick={() => onNav("browse")}
-              className="relative rounded-3xl overflow-hidden cursor-pointer group"
+              className="relative rounded-3xl overflow-hidden group"
               style={{ gridRow: "1 / 3" }}>
               <img src={DESTINATIONS_DATA[0].image} alt={DESTINATIONS_DATA[0].name}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
@@ -333,17 +332,13 @@ function LandingPage({ onNav, onLogin, onRegister }) {
               <div className="absolute bottom-0 left-0 right-0 p-8">
                 <h3 className="text-white font-black text-4xl leading-tight">{DESTINATIONS_DATA[0].name}</h3>
                 <p className="text-slate-300 text-base mt-2">{DESTINATIONS_DATA[0].tagline}</p>
-                <span className="inline-flex items-center gap-1.5 mt-4 text-emerald-400 text-sm font-semibold group-hover:gap-3 transition-all">
-                  Explore with a guide →
-                </span>
               </div>
             </motion.div>
 
             {/* Kandy + Ella — each occupies one row in the right column */}
             {DESTINATIONS_DATA.slice(1, 3).map(d => (
               <motion.div key={d.name} whileHover={{ scale: 1.02 }} transition={{ duration: 0.25 }}
-                onClick={() => onNav("browse")}
-                className="relative rounded-3xl overflow-hidden cursor-pointer group">
+                className="relative rounded-3xl overflow-hidden group">
                 <img src={d.image} alt={d.name}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
@@ -362,8 +357,7 @@ function LandingPage({ onNav, onLogin, onRegister }) {
           <div className="grid grid-cols-5 gap-4">
             {DESTINATIONS_DATA.slice(3).map(d => (
               <motion.div key={d.name} whileHover={{ scale: 1.03, y: -4 }} transition={{ duration: 0.25 }}
-                onClick={() => onNav("browse")}
-                className="relative rounded-2xl overflow-hidden cursor-pointer group"
+                className="relative rounded-2xl overflow-hidden group"
                 style={{ height: 220 }}>
                 <img src={d.image} alt={d.name}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
