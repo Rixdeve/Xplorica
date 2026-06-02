@@ -236,27 +236,27 @@ function LandingPage({ onNav, onLogin, onRegister }) {
               const TESTIMONIALS = [
                 {
                   name: "Emily Hartwell", country: "United Kingdom",
-                  photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&q=80",
+                  photo: "https://res.cloudinary.com/de6869utj/image/upload/v1780412300/emilyheartwell_a5wnql.jpg",
                   comment: "Xplorica completely transformed how I travel. Finding a trusted local guide used to take days of research — here it took minutes. The whole platform is beautifully designed and genuinely trustworthy.",
                 },
                 {
                   name: "Marcus Lindström", country: "Sweden",
-                  photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&q=80",
+                  photo: "https://res.cloudinary.com/de6869utj/image/upload/v1780412299/MarcusLindstr%C3%B6m_xbvboz.jpg",
                   comment: "I was sceptical about using a booking platform for something as personal as a guided tour. Xplorica proved me completely wrong. The verified profiles, direct messaging, and seamless payment gave me total confidence.",
                 },
                 {
                   name: "Yuki Nakamura", country: "Japan",
-                  photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=120&q=80",
+                  photo: "https://res.cloudinary.com/de6869utj/image/upload/v1780412299/YukiNakamura_qblncd.jpg",
                   comment: "What makes Xplorica stand out is how human it feels. Real guides, real reviews, real conversations. It connected me with experiences I could never have arranged on my own. I will use it every time I visit Sri Lanka.",
                 },
                 {
                   name: "Amira El-Sayed", country: "Germany",
-                  photo: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=120&q=80",
+                  photo: "https://res.cloudinary.com/de6869utj/image/upload/v1780412299/AmiraEl-Sayed_y6kops.jpg",
                   comment: "As a solo traveller, safety matters most to me. Xplorica's verification process and honest review system gave me complete peace of mind. The platform handled everything — booking, communication, payment — flawlessly.",
                 },
                 {
                   name: "David Okafor", country: "Australia",
-                  photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&q=80",
+                  photo: "https://res.cloudinary.com/de6869utj/image/upload/v1780412299/DavidOkafor_srsw1t.jpg",
                   comment: "I used Xplorica to plan a two-week Sri Lanka itinerary and it exceeded every expectation. The service is intuitive, the guides are exceptional, and the support throughout was outstanding. Already recommending it to everyone.",
                 },
               ];
