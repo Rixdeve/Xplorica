@@ -8,7 +8,7 @@ const LANGUAGES    = ["English", "Sinhala", "Tamil", "French", "German", "Japane
 const DESTINATIONS_DATA = [
   { name: "Sigiriya",     tagline: "Ancient Lion Rock Fortress",       image: "https://res.cloudinary.com/de6869utj/image/upload/v1780413291/sigiriya_hj1dpi.webp", tag: "UNESCO Heritage" },
   { name: "Kandy",        tagline: "Temple of the Sacred Tooth Relic", image: "https://res.cloudinary.com/de6869utj/image/upload/v1780413290/kandy_xvjfjx.jpg", tag: "Cultural Capital" },
-  { name: "Ella",         tagline: "Nine Arch Bridge & Tea Trails",    image: "https://res.cloudinary.com/de6869utj/image/upload/v1780413290/galle_a95kax.jpg", tag: "Hill Country" },
+  { name: "Ella",         tagline: "Nine Arch Bridge & Tea Trails",    image: "https://res.cloudinary.com/de6869utj/image/upload/v1780413290/ella_v4rahd.webp", tag: "Hill Country" },
   { name: "Galle",        tagline: "Dutch Colonial Fort by the Sea",   image: "https://res.cloudinary.com/de6869utj/image/upload/v1780413290/galle_a95kax.jpg", tag: "Historic Fort" },
   { name: "Mirissa",      tagline: "Whale Watching & Sunset Beaches",  image: "https://res.cloudinary.com/de6869utj/image/upload/v1780413291/mirissa_wz12my.webp", tag: "Beach Paradise" },
   { name: "Yala",         tagline: "Leopards & Wildlife Safari",       image: "https://res.cloudinary.com/de6869utj/image/upload/v1780413292/yala_rimytw.jpg", tag: "National Park" },
@@ -684,6 +684,7 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
 
   const openBookModal = () => {
     if (!user) { onLogin("login"); return; }
+    if (user.role === "GUIDE") return;
     setBookStartDate(""); setBookEndDate(""); setBookPeople(1); setBookDestinations([]); setBookMsg(""); setBookingId(null);
     setShowBookModal(true);
   };
@@ -770,7 +771,13 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
           </div>
           {/* Actions */}
           <div className="space-y-3">
-            <Btn full variant="primary" onClick={openBookModal}>📅 Book This Guide</Btn>
+            {user?.role === "GUIDE" ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 text-amber-800 text-sm text-center font-medium">
+                Guides cannot book other guides
+              </div>
+            ) : (
+              <Btn full variant="primary" onClick={openBookModal}>📅 Book This Guide</Btn>
+            )}
             {user && <Btn full variant="outline" onClick={() => onChat(guide)}>💬 Chat with Guide</Btn>}
             {user?.role === "TOURIST" && (
               <Btn full variant="ghost" onClick={() => { setRateError(""); setStars(0); setComment(""); setShowRateModal(true); }}>
