@@ -1127,6 +1127,8 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch, onClose }) {
       if (!form.photoFile)                  { setError("Please upload a profile photo."); return; }
       if (form.languages.length === 0)      { setError("Please select at least one language."); return; }
       if (form.destinations.length === 0)   { setError("Please select at least one destination."); return; }
+      const unpricedReg = form.destinations.filter(d => !d.price || d.price <= 0);
+      if (unpricedReg.length > 0) { setError(`Set a price (> $0) for: ${unpricedReg.map(d => d.name).join(", ")}`); return; }
     }
 
     setLoading(true);
@@ -1477,6 +1479,8 @@ function GuideDashboard({ user, onNav }) {
     if (!form.photoPreview && !form.photoFile)                         { setSaveError("Please upload a profile photo."); return; }
     if (form.languages.length === 0)                                   { setSaveError("Please select at least one language."); return; }
     if (form.destinations.length === 0)                                { setSaveError("Please select at least one destination."); return; }
+    const unpriced = form.destinations.filter(d => !d.price || d.price <= 0);
+    if (unpriced.length > 0) { setSaveError(`Set a price (> $0) for: ${unpriced.map(d => d.name).join(", ")}`); return; }
 
     setSaving(true);
     try {
