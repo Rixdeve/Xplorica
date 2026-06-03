@@ -10,6 +10,7 @@ import com.xplorica.dto.GuideProfileResponse;
 import com.xplorica.dto.RatingRequest;
 import com.xplorica.dto.RatingResponse;
 import com.xplorica.entity.Booking;
+import com.xplorica.entity.DestinationItem;
 import com.xplorica.entity.GuideProfile;
 import com.xplorica.entity.Rating;
 import com.xplorica.entity.User;
@@ -65,7 +66,7 @@ public class GuideService {
             .orElse(GuideProfile.builder().user(user).build());
 
         boolean isPremium = profile.isEffectivelyPremium();
-        List<String> destinations = req.getDestinations() == null ? List.of() : req.getDestinations();
+        List<DestinationItem> destinations = req.getDestinations() == null ? List.of() : req.getDestinations();
         if (!isPremium && destinations.size() > 5)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "Non-premium guides can add up to 5 destinations. Upgrade to Premium for unlimited.");
@@ -76,7 +77,7 @@ public class GuideService {
         profile.setLanguages(req.getLanguages());
         profile.setDestinations(destinations);
         if (req.getDailyRate() != null) profile.setDailyRate(req.getDailyRate());
-        if (profile.getStatus() == null) profile.setStatus(GuideProfile.Status.APPROVED);
+        if (profile.getStatus() == null) profile.setStatus(GuideProfile.Status.PENDING);
 
         return GuideProfileResponse.from(guideRepo.save(profile));
     }

@@ -27,11 +27,14 @@ com\xplorica\entity\User$UserBuilder.class
 com\xplorica\service\AuthService.class
 com\xplorica\config\SecurityConfig.class
 com\xplorica\dto\MessageResponse.class
+com\xplorica\service\AdminService.class
 com\xplorica\entity\GuideProfile$GuideProfileBuilder.class
 com\xplorica\entity\ChatMessage$ChatMessageBuilder.class
 com\xplorica\entity\Booking$Status.class
+com\xplorica\controller\AdminController.class
 com\xplorica\entity\Booking.class
 com\xplorica\config\JwtAuthFilter.class
+com\xplorica\entity\DestinationItem.class
 com\xplorica\service\BookingService.class
 com\xplorica\dto\UserSummaryResponse.class
 com\xplorica\dto\GuideProfileResponse.class

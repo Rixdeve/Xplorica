@@ -209,3 +209,46 @@ class PrivacyController {
         return ResponseEntity.ok("Privacy Policy content served here.");
     }
 }
+
+// ─── Admin Controller ─────────────────────────────────────────────────────
+@RestController
+@RequestMapping("/api/admin")
+@RequiredArgsConstructor
+class AdminController {
+
+    private final com.xplorica.service.AdminService adminService;
+    private final com.xplorica.repository.UserRepository userRepo;
+
+    @GetMapping("/guides")
+    public ResponseEntity<java.util.List<com.xplorica.dto.GuideProfileResponse>> listGuides(
+        @AuthenticationPrincipal UserDetails currentUser,
+        @RequestParam(required = false) String status
+    ) {
+        requireAdmin(currentUser);
+        return ResponseEntity.ok(adminService.listGuides(status));
+    }
+
+    @PostMapping("/guides/{id}/approve")
+    public ResponseEntity<com.xplorica.dto.GuideProfileResponse> approve(
+        @AuthenticationPrincipal UserDetails currentUser,
+        @PathVariable Long id
+    ) {
+        requireAdmin(currentUser);
+        return ResponseEntity.ok(adminService.setStatus(id, com.xplorica.entity.GuideProfile.Status.APPROVED));
+    }
+
+    @PostMapping("/guides/{id}/reject")
+    public ResponseEntity<com.xplorica.dto.GuideProfileResponse> reject(
+        @AuthenticationPrincipal UserDetails currentUser,
+        @PathVariable Long id
+    ) {
+        requireAdmin(currentUser);
+        return ResponseEntity.ok(adminService.setStatus(id, com.xplorica.entity.GuideProfile.Status.REJECTED));
+    }
+
+    private void requireAdmin(UserDetails currentUser) {
+        com.xplorica.entity.User user = userRepo.findByEmail(currentUser.getUsername()).orElseThrow();
+        if (user.getRole() != com.xplorica.entity.User.Role.ADMIN)
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.FORBIDDEN, "Admin access required");
+    }
+}

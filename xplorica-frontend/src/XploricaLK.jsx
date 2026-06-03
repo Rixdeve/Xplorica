@@ -536,7 +536,7 @@ function GuideCard({ guide, onView }) {
         </div>
         <p className="text-sm text-slate-500 line-clamp-2 mb-4">{guide.description}</p>
         <div className="flex flex-wrap gap-1.5 mb-4">
-          {(guide.destinations || []).slice(0, 3).map(d => <Badge key={d} color="blue">{d}</Badge>)}
+          {(guide.destinations || []).slice(0, 3).map(d => <Badge key={d.name} color="blue">{d.name}</Badge>)}
           {(guide.destinations || []).length > 3 && <Badge color="slate">+{guide.destinations.length - 3}</Badge>}
         </div>
         <div className="flex items-center justify-between">
@@ -726,7 +726,6 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
         startDate:      bookStartDate,
         endDate:        bookEndDate,
         numberOfPeople: bookPeople,
-        totalAmount:    rate * bookPeople * days,
         destination:    bookDestinations.join(", "),
       });
       setBookingId(booking.id);
@@ -778,7 +777,7 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
             ) : (
               <Btn full variant="primary" onClick={openBookModal}>📅 Book This Guide</Btn>
             )}
-            {user && <Btn full variant="outline" onClick={() => onChat(guide)}>💬 Chat with Guide</Btn>}
+            {user?.role === "TOURIST" && <Btn full variant="outline" onClick={() => onChat(guide)}>💬 Chat with Guide</Btn>}
             {user?.role === "TOURIST" && (
               <Btn full variant="ghost" onClick={() => { setRateError(""); setStars(0); setComment(""); setShowRateModal(true); }}>
                 ⭐ Leave a Review
@@ -797,7 +796,9 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
             <h2 className="text-lg font-bold text-blue-950 mb-4">Destinations</h2>
             <div className="flex flex-wrap gap-2">
               {(guide.destinations || []).map(d => (
-                <span key={d} className="bg-blue-50 text-blue-800 font-semibold text-sm px-4 py-2 rounded-full">📍 {d}</span>
+                <span key={d.name} className="bg-blue-50 text-blue-800 font-semibold text-sm px-4 py-2 rounded-full">
+                  📍 {d.name}{d.price ? <span className="ml-1.5 text-blue-500 font-normal text-xs">${d.price}/day</span> : null}
+                </span>
               ))}
             </div>
           </div>
@@ -863,17 +864,20 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
             <label className="text-sm font-semibold text-slate-700">Destinations <span className="text-red-500">*</span> <span className="text-slate-400 font-normal text-xs">(select all that apply)</span></label>
             <div className="flex flex-wrap gap-2">
               {(guide.destinations || []).map(d => {
-                const selected = bookDestinations.includes(d);
+                const selected = bookDestinations.includes(d.name);
                 return (
-                  <button key={d} type="button"
+                  <button key={d.name} type="button"
                     onClick={() => setBookDestinations(prev =>
-                      prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]
+                      prev.includes(d.name) ? prev.filter(x => x !== d.name) : [...prev, d.name]
                     )}
-                    className={`px-4 py-2 rounded-xl text-sm font-semibold border transition
+                    className={`px-4 py-2 rounded-xl text-sm font-semibold border transition flex items-center gap-2
                       ${selected
                         ? "bg-blue-600 text-white border-blue-600"
                         : "bg-white text-slate-600 border-slate-200 hover:border-blue-400 hover:text-blue-600"}`}>
-                    📍 {d}
+                    📍 {d.name}
+                    <span className={`text-xs font-normal ${selected ? "text-blue-200" : "text-slate-400"}`}>
+                      ${d.price || 0}/day
+                    </span>
                   </button>
                 );
               })}
@@ -881,19 +885,35 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
             {bookDestinations.length === 0 && <p className="text-xs text-slate-400">Pick at least one destination</p>}
           </div>
           {(() => {
-            const days              = bookStartDate && bookEndDate && bookEndDate >= bookStartDate
+            const days = bookStartDate && bookEndDate && bookEndDate >= bookStartDate
               ? Math.round((new Date(bookEndDate) - new Date(bookStartDate)) / 86400000) + 1 : null;
-            const subtotal          = guide.dailyRate && days ? guide.dailyRate * bookPeople * days : null;
-            const rawFee            = subtotal ? subtotal * 0.15 : null;
-            const serviceFee        = rawFee != null ? Math.max(2, Math.min(5, Math.round(rawFee * 100) / 100)) : null;
+            const selectedItems = (guide.destinations || []).filter(d => bookDestinations.includes(d.name));
+            const destTotal = selectedItems.reduce((sum, d) => sum + (d.price || 0), 0);
+            const subtotal = days && destTotal > 0 ? destTotal * days : null;
+            const rawFee = subtotal ? subtotal * 0.15 : null;
+            const serviceFee = rawFee != null ? Math.max(2, Math.min(5, Math.round(rawFee * 100) / 100)) : null;
             const platformCommission = subtotal != null ? Math.round(subtotal * 0.15 * 100) / 100 : null;
-            const grandTotal        = subtotal != null && serviceFee != null ? (subtotal + serviceFee).toFixed(2) : null;
-            const guideReceives     = subtotal != null && platformCommission != null ? (subtotal - platformCommission).toFixed(2) : null;
+            const grandTotal = subtotal != null && serviceFee != null ? (subtotal + serviceFee).toFixed(2) : null;
+            const guideReceives = subtotal != null && platformCommission != null ? (subtotal - platformCommission).toFixed(2) : null;
             return (
               <div className="bg-slate-50 rounded-2xl p-4 space-y-2 text-sm">
+                {selectedItems.length > 0 && days && (
+                  <div className="space-y-1 pb-2 border-b border-slate-200">
+                    {selectedItems.map(d => (
+                      <div key={d.name} className="flex justify-between text-slate-500">
+                        <span>📍 {d.name}</span>
+                        <span>${d.price || 0} × {days} {days === 1 ? "day" : "days"} = <span className="font-medium text-slate-700">${((d.price || 0) * days).toFixed(2)}</span></span>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className="flex justify-between text-slate-600">
-                  <span>Daily rate × {bookPeople} {bookPeople === 1 ? "person" : "people"} × {days ?? "—"} {days === 1 ? "day" : "days"}</span>
+                  <span>Destinations total</span>
                   <span>{subtotal != null ? `$${subtotal.toFixed(2)}` : "—"}</span>
+                </div>
+                <div className="flex justify-between text-slate-500 text-xs">
+                  <span>For {bookPeople} {bookPeople === 1 ? "person" : "people"} (guide info)</span>
+                  <span className="text-slate-400 italic">not charged</span>
                 </div>
                 <div className="flex justify-between text-slate-500">
                   <span>Tourist service fee <span className="text-xs text-slate-400">($2–$5)</span></span>
@@ -905,7 +925,7 @@ function GuideDetailPage({ guide, user, onBack, onChat, onNav, onLogin }) {
                 </div>
                 <div className="border-t border-slate-100 pt-2 space-y-1 text-xs text-slate-400">
                   <div className="flex justify-between">
-                    <span>Platform commission <span>(15%)</span></span>
+                    <span>Platform commission (15%)</span>
                     <span>{platformCommission != null ? `$${platformCommission.toFixed(2)}` : "—"}</span>
                   </div>
                   <div className="flex justify-between">
@@ -1069,6 +1089,13 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch, onClose }) {
   const set    = k => v => setForm(p => ({ ...p, [k]: v }));
   const toggle = (key, val) => setForm(p => ({
     ...p, [key]: p[key].includes(val) ? p[key].filter(i => i !== val) : [...p[key], val],
+  }));
+  const toggleDest = (name) => setForm(p => {
+    const exists = p.destinations.some(d => d.name === name);
+    return { ...p, destinations: exists ? p.destinations.filter(d => d.name !== name) : [...p.destinations, { name, price: 0 }] };
+  });
+  const setDestPrice = (name, price) => setForm(p => ({
+    ...p, destinations: p.destinations.map(d => d.name === name ? { ...d, price: Number(price) || 0 } : d),
   }));
 
   const handlePhotoChange = (e) => {
@@ -1296,11 +1323,11 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch, onClose }) {
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {DESTINATIONS.map(d => {
-                    const selected = form.destinations.includes(d);
+                    const selected = form.destinations.some(item => item.name === d);
                     const atLimit = !selected && form.destinations.length >= 5;
                     return (
                       <button key={d} type="button"
-                        onClick={() => !atLimit && toggle("destinations", d)}
+                        onClick={() => !atLimit && toggleDest(d)}
                         disabled={atLimit}
                         className={`px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all ${
                           selected
@@ -1312,6 +1339,22 @@ function AuthPage({ mode, defaultRole, onSuccess, onSwitch, onClose }) {
                     );
                   })}
                 </div>
+                {form.destinations.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Price per destination (USD / day)</p>
+                    {form.destinations.map(item => (
+                      <div key={item.name} className="flex items-center gap-3 bg-slate-50 rounded-xl px-3 py-2">
+                        <span className="text-sm font-medium text-slate-700 flex-1">📍 {item.name}</span>
+                        <span className="text-slate-400 text-sm">$</span>
+                        <input type="number" min="0" step="1" value={item.price || ""}
+                          onChange={e => setDestPrice(item.name, e.target.value)}
+                          placeholder="0"
+                          className="w-20 border border-slate-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 text-center" />
+                        <span className="text-slate-400 text-xs">/day</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -1374,6 +1417,13 @@ function GuideDashboard({ user, onNav }) {
   const setF = k => v => setForm(p => ({ ...p, [k]: v }));
   const toggleItem = (key, val) => setForm(p => ({
     ...p, [key]: p[key].includes(val) ? p[key].filter(i => i !== val) : [...p[key], val],
+  }));
+  const toggleDestItem = (name) => setForm(p => {
+    const exists = p.destinations.some(d => d.name === name);
+    return { ...p, destinations: exists ? p.destinations.filter(d => d.name !== name) : [...p.destinations, { name, price: 0 }] };
+  });
+  const setDestPriceItem = (name, price) => setForm(p => ({
+    ...p, destinations: p.destinations.map(d => d.name === name ? { ...d, price: Number(price) || 0 } : d),
   }));
 
   // Load guide profile from DB on mount
@@ -1544,11 +1594,11 @@ function GuideDashboard({ user, onNav }) {
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {DESTINATIONS.map(d => {
-                    const selected = form.destinations.includes(d);
+                    const selected = form.destinations.some(item => item.name === d);
                     const atLimit = !isPremium && !selected && form.destinations.length >= 5;
                     return (
                       <button key={d} type="button"
-                        onClick={() => !atLimit && toggleItem("destinations", d)}
+                        onClick={() => !atLimit && toggleDestItem(d)}
                         disabled={atLimit}
                         className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition
                           ${selected
@@ -1561,6 +1611,22 @@ function GuideDashboard({ user, onNav }) {
                     );
                   })}
                 </div>
+                {form.destinations.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Price per destination (USD / day)</p>
+                    {form.destinations.map(item => (
+                      <div key={item.name} className="flex items-center gap-3 bg-slate-50 rounded-xl px-3 py-2">
+                        <span className="text-sm font-medium text-slate-700 flex-1">📍 {item.name}</span>
+                        <span className="text-slate-400 text-sm">$</span>
+                        <input type="number" min="0" step="1" value={item.price || ""}
+                          onChange={e => setDestPriceItem(item.name, e.target.value)}
+                          placeholder="0"
+                          className="w-20 border border-slate-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 text-center" />
+                        <span className="text-slate-400 text-xs">/day</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {saveError && <p className="text-red-500 text-sm bg-red-50 rounded-xl px-4 py-2">{saveError}</p>}
@@ -1675,22 +1741,33 @@ function GuideDashboard({ user, onNav }) {
                             ✓ Confirm
                           </button>
                         )}
-                        {b.status === "CONFIRMED" && (
-                          <button
-                            onClick={async () => {
-                              try {
-                                await api.updateBookingStatus(b.id, "COMPLETED");
-                                setBookings(prev => prev.map(item => 
-                                  item.id === b.id ? { ...item, status: "COMPLETED" } : item
-                                ));
-                              } catch (err) {
-                                alert("Failed to mark as completed: " + err.message);
-                              }
-                            }}
-                            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2 px-3 rounded-xl transition">
-                            ✓ Complete
-                          </button>
-                        )}
+                        {b.status === "CONFIRMED" && (() => {
+                          const tourEnded = b.endDate && new Date(b.endDate) <= new Date(new Date().toDateString());
+                          const paid = b.paymentStatus === "PAID";
+                          if (paid && tourEnded) {
+                            return (
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await api.updateBookingStatus(b.id, "COMPLETED");
+                                    setBookings(prev => prev.map(item =>
+                                      item.id === b.id ? { ...item, status: "COMPLETED" } : item
+                                    ));
+                                  } catch (err) {
+                                    alert("Failed to mark as completed: " + err.message);
+                                  }
+                                }}
+                                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2 px-3 rounded-xl transition">
+                                ✓ Complete Tour
+                              </button>
+                            );
+                          }
+                          return (
+                            <span className="flex-1 text-center bg-slate-100 text-slate-400 text-xs font-medium py-2 px-3 rounded-xl">
+                              {!paid ? "⏳ Awaiting payment" : "📅 Tour not ended yet"}
+                            </span>
+                          );
+                        })()}
                         <button
                           onClick={async () => {
                             if (!confirm("Are you sure you want to cancel this booking?")) return;
@@ -1836,6 +1913,218 @@ function GuideDashboard({ user, onNav }) {
         </div>
       )}
 
+    </div>
+  );
+}
+
+// ── Admin Dashboard ───────────────────────────────────────────────────────
+function AdminDashboard({ user, onLogout }) {
+  const [guides, setGuides]       = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [filter, setFilter]       = useState("PENDING");
+  const [actionLoading, setActionLoading] = useState(null); // guide id being actioned
+
+  const load = (status) => {
+    setLoading(true);
+    api.getAdminGuides(status === "ALL" ? "" : status)
+      .then(data => setGuides(data || []))
+      .catch(() => setGuides([]))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(filter); }, [filter]);
+
+  const action = async (id, type) => {
+    setActionLoading(id);
+    try {
+      const updated = type === "approve"
+        ? await api.adminApproveGuide(id)
+        : await api.adminRejectGuide(id);
+      setGuides(prev => prev.map(g => g.id === id ? { ...g, status: updated.status } : g));
+    } catch (e) {
+      alert(e.message || "Action failed");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const TABS = [
+    { key: "PENDING",  label: "Pending",  color: "amber"   },
+    { key: "APPROVED", label: "Approved", color: "emerald" },
+    { key: "REJECTED", label: "Rejected", color: "slate"   },
+    { key: "ALL",      label: "All",      color: "blue"    },
+  ];
+
+  const statusColor = { PENDING: "amber", APPROVED: "emerald", REJECTED: "slate" };
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      {/* Admin nav */}
+      <div className="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <img src="https://res.cloudinary.com/de6869utj/image/upload/v1780316235/X_PLORICA_LK_a6wxka.png"
+            alt="Xplorica LK" className="h-8 w-auto object-contain" />
+          <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full uppercase tracking-wide">Admin</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-slate-500">{user.fullName}</span>
+          <button onClick={onLogout}
+            className="text-sm font-semibold text-red-500 hover:text-red-700 transition">
+            Sign out
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-6 py-10">
+        <div className="mb-8">
+          <h1 className="text-3xl font-black text-blue-950">Guide Approvals</h1>
+          <p className="text-slate-500 mt-1">Review and approve guide account applications.</p>
+        </div>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          {[
+            { label: "Pending Review", status: "PENDING",  icon: "⏳", bg: "from-amber-50 to-amber-100",    num: "text-amber-700" },
+            { label: "Approved",       status: "APPROVED", icon: "✅", bg: "from-emerald-50 to-emerald-100", num: "text-emerald-700" },
+            { label: "Rejected",       status: "REJECTED", icon: "✕",  bg: "from-slate-50 to-slate-100",     num: "text-slate-600" },
+          ].map(s => (
+            <button key={s.status} onClick={() => setFilter(s.status)}
+              className={`bg-gradient-to-br ${s.bg} rounded-2xl p-5 text-left border-2 transition-all ${filter === s.status ? "border-blue-400 shadow-md" : "border-transparent"}`}>
+              <div className="text-2xl mb-1">{s.icon}</div>
+              <p className={`text-2xl font-black ${s.num}`}>
+                {guides.filter(g => filter === "ALL" ? true : true).length > 0 || filter === s.status
+                  ? <span>—</span> : "0"}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">{s.label}</p>
+            </button>
+          ))}
+        </div>
+
+        {/* Filter tabs */}
+        <div className="flex gap-2 bg-white rounded-xl p-1 border border-slate-200 w-fit mb-6">
+          {TABS.map(t => (
+            <button key={t.key} onClick={() => setFilter(t.key)}
+              className={`px-5 py-2 text-sm font-semibold rounded-lg transition ${filter === t.key ? "bg-blue-700 text-white shadow" : "text-slate-500 hover:text-slate-700"}`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Guide list */}
+        {loading ? <Spinner /> : guides.length === 0 ? (
+          <div className="text-center py-20 text-slate-400">
+            <p className="text-5xl mb-4">🔍</p>
+            <p className="text-lg font-semibold">No {filter.toLowerCase()} guides</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {guides.map(g => (
+              <div key={g.id} className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                <div className="p-6 flex gap-5">
+                  {/* Photo */}
+                  <div className="shrink-0">
+                    {g.photoUrl
+                      ? <img src={mediaUrl(g.photoUrl)} alt={g.fullName}
+                          className="w-20 h-20 rounded-2xl object-cover" />
+                      : <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-600 to-emerald-500 flex items-center justify-center text-white font-black text-2xl">
+                          {g.fullName?.[0]}
+                        </div>
+                    }
+                  </div>
+
+                  {/* Details */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-black text-blue-950 text-lg">{g.fullName}</h3>
+                          <Badge color={statusColor[g.status] || "slate"}>{g.status}</Badge>
+                          {g.premium && <Badge color="amber">⭐ Premium</Badge>}
+                        </div>
+                        <p className="text-slate-400 text-sm mt-0.5">{g.email}</p>
+                      </div>
+                      <p className="text-xs text-slate-400 shrink-0">
+                        Applied {g.userCreatedAt ? new Date(g.userCreatedAt).toLocaleDateString() : "—"}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-sm">
+                      <div>
+                        <p className="text-xs text-slate-400 mb-0.5">Licence</p>
+                        <p className="font-medium text-slate-700">{g.licenseNumber || "—"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400 mb-0.5">Experience</p>
+                        <p className="font-medium text-slate-700">{g.yearsExperience != null ? `${g.yearsExperience} yrs` : "—"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400 mb-0.5">Daily Rate</p>
+                        <p className="font-medium text-slate-700">{g.dailyRate ? `$${g.dailyRate}` : "—"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400 mb-0.5">Languages</p>
+                        <p className="font-medium text-slate-700 truncate">{g.languages?.join(", ") || "—"}</p>
+                      </div>
+                    </div>
+
+                    {g.description && (
+                      <p className="text-slate-500 text-sm mt-3 line-clamp-2">{g.description}</p>
+                    )}
+
+                    {g.destinations?.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-3">
+                        {g.destinations.map(d => (
+                          <span key={d.name} className="text-xs bg-blue-50 text-blue-700 font-semibold px-2.5 py-1 rounded-full">
+                            📍 {d.name}{d.price ? ` · $${d.price}` : ""}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action bar */}
+                {g.status === "PENDING" && (
+                  <div className="border-t border-slate-100 px-6 py-4 flex gap-3 bg-slate-50">
+                    <button
+                      disabled={actionLoading === g.id}
+                      onClick={() => action(g.id, "approve")}
+                      className="flex-1 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition">
+                      {actionLoading === g.id ? "…" : "✓ Approve"}
+                    </button>
+                    <button
+                      disabled={actionLoading === g.id}
+                      onClick={() => action(g.id, "reject")}
+                      className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition">
+                      ✕ Reject
+                    </button>
+                  </div>
+                )}
+                {g.status === "APPROVED" && (
+                  <div className="border-t border-slate-100 px-6 py-4 flex gap-3 bg-slate-50">
+                    <button
+                      disabled={actionLoading === g.id}
+                      onClick={() => action(g.id, "reject")}
+                      className="bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-sm py-2 px-5 rounded-xl transition disabled:opacity-50">
+                      Revoke Approval
+                    </button>
+                  </div>
+                )}
+                {g.status === "REJECTED" && (
+                  <div className="border-t border-slate-100 px-6 py-4 flex gap-3 bg-slate-50">
+                    <button
+                      disabled={actionLoading === g.id}
+                      onClick={() => action(g.id, "approve")}
+                      className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-sm py-2 px-5 rounded-xl transition disabled:opacity-50">
+                      ✓ Re-approve
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -2294,7 +2583,10 @@ export default function App() {
   useEffect(() => {
     const token  = api.getToken();
     const stored = api.loadUser();
-    if (token && stored) setUser(stored);
+    if (token && stored) {
+      setUser(stored);
+      if (stored.role === "ADMIN") setPage("admin");
+    }
   }, []);
 
   const nav = (p, data) => {
@@ -2315,12 +2607,13 @@ export default function App() {
   const authSuccess = (u) => {
     setUser(u);
     setAuthMode(null);
+    if (u.role === "ADMIN") { setPage("admin"); return; }
     if (u.role === "GUIDE") { setPage("dashboard"); return; }
     setPage(previousPage === "guide" && selectedGuide ? "guide" : "home");
   };
 
-  const showFooter = !["auth", "chat", "payment"].includes(page);
-  const showNav    = page !== "auth";
+  const showFooter = !["auth", "chat", "payment", "admin"].includes(page);
+  const showNav    = !["auth", "admin"].includes(page);
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
@@ -2394,6 +2687,10 @@ export default function App() {
                 onBack={() => nav(user?.role === "TOURIST" ? "my-bookings" : "browse")}
                 onComplete={() => { setPendingBooking(null); nav(user?.role === "TOURIST" ? "my-bookings" : "browse"); }} />
             </motion.div>
+          )}
+
+          {page === "admin" && user?.role === "ADMIN" && (
+            <AdminDashboard user={user} onLogout={logout} />
           )}
 
           {page === "dashboard" && user?.role === "GUIDE" && (

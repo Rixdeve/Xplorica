@@ -1,5 +1,6 @@
 package com.xplorica.dto;
 
+import com.xplorica.entity.DestinationItem;
 import com.xplorica.entity.GuideProfile;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -10,24 +11,27 @@ public class GuideProfileResponse {
     private Long id;
     private Long userId;
     private String fullName;
+    private String email;
     private String photoUrl;
     private String description;
     private String licenseNumber;
     private Integer yearsExperience;
     private List<String> languages;
-    private List<String> destinations;
+    private List<DestinationItem> destinations;
     private Double dailyRate;
     private Double averageRating;
     private Integer totalRatings;
     private GuideProfile.Status status;
     private boolean premium;
     private LocalDateTime premiumExpiresAt;
+    private LocalDateTime userCreatedAt;
 
     public static GuideProfileResponse from(GuideProfile g) {
         GuideProfileResponse r = new GuideProfileResponse();
         r.id = g.getId();
         r.userId = g.getUser().getId();
         r.fullName = g.getUser().getFullName();
+        r.email = g.getUser().getEmail();
         r.photoUrl = g.getPhotoUrl();
         r.description = g.getDescription();
         r.licenseNumber = g.getLicenseNumber();
@@ -40,6 +44,7 @@ public class GuideProfileResponse {
         r.status = g.getStatus();
         r.premium = g.isEffectivelyPremium();
         r.premiumExpiresAt = g.getPremiumExpiresAt();
+        r.userCreatedAt = g.getUser().getCreatedAt();
         return r;
     }
 }

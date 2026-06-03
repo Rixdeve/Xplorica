@@ -59,8 +59,7 @@ private List<String> languages;
         joinColumns = @JoinColumn(name = "guide_id")
 )
 @OrderColumn(name = "idx")
-@Column(name = "destination")
-private List<String> destinations;
+private List<DestinationItem> destinations;
 
     @Column
     private Double dailyRate;

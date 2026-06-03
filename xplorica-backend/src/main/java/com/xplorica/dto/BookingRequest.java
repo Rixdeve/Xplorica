@@ -14,7 +14,7 @@ public class BookingRequest {
     private LocalDate endDate;
     @NotNull @Min(1)
     private Integer numberOfPeople;
-    @NotNull @Positive
+    /** Ignored — total is computed server-side from destination prices × days. */
     private Double totalAmount;
     private String destination;
 }

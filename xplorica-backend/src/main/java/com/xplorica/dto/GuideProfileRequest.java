@@ -1,5 +1,6 @@
 package com.xplorica.dto;
 
+import com.xplorica.entity.DestinationItem;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import java.util.List;
@@ -14,7 +15,7 @@ public class GuideProfileRequest {
     @NotEmpty
     private List<String> languages;
     @NotEmpty
-    private List<String> destinations;
+    private List<DestinationItem> destinations;
 
     @Positive
     private Double dailyRate;

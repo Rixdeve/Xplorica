@@ -148,3 +148,21 @@ export const subscribePremium = () =>
 
 export const getGuideAnalytics = () =>
   fetch(`${API_URL}/api/guides/analytics`, { headers: bearerHeaders() }).then(handleResponse);
+
+// ── Admin ─────────────────────────────────────────────────────────────────
+export const getAdminGuides = (status) => {
+  const qs = status ? `?status=${status}` : "";
+  return fetch(`${API_URL}/api/admin/guides${qs}`, { headers: bearerHeaders() }).then(handleResponse);
+};
+
+export const adminApproveGuide = (id) =>
+  fetch(`${API_URL}/api/admin/guides/${id}/approve`, {
+    method: "POST",
+    headers: bearerHeaders(),
+  }).then(handleResponse);
+
+export const adminRejectGuide = (id) =>
+  fetch(`${API_URL}/api/admin/guides/${id}/reject`, {
+    method: "POST",
+    headers: bearerHeaders(),
+  }).then(handleResponse);

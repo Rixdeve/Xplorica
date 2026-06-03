@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -54,14 +56,33 @@ public class BookingService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                 "This guide is not available on the selected dates");
 
-        double serviceFee = calcServiceFee(req.getTotalAmount());
-        double platformCommission = calcPlatformCommission(req.getTotalAmount());
+        // Compute total from selected destination prices × days (no per-person multiplier)
+        List<String> selectedNames = (req.getDestination() != null && !req.getDestination().isBlank())
+            ? Arrays.asList(req.getDestination().split(",\\s*"))
+            : List.of();
+
+        double destTotal = guide.getDestinations() != null
+            ? guide.getDestinations().stream()
+                .filter(d -> d.getName() != null && selectedNames.contains(d.getName().trim()))
+                .mapToDouble(d -> d.getPrice() != null ? d.getPrice() : 0.0)
+                .sum()
+            : 0.0;
+
+        long days = ChronoUnit.DAYS.between(req.getStartDate(), req.getEndDate()) + 1;
+
+        // Fall back to dailyRate if no destination prices are configured yet
+        double subtotal = destTotal > 0
+            ? destTotal * days
+            : (guide.getDailyRate() != null ? guide.getDailyRate() * days : 0.0);
+
+        double serviceFee = calcServiceFee(subtotal);
+        double platformCommission = calcPlatformCommission(subtotal);
         Booking b = Booking.builder()
             .tourist(tourist).guide(guide)
             .startDate(req.getStartDate())
             .endDate(req.getEndDate())
             .numberOfPeople(req.getNumberOfPeople())
-            .totalAmount(req.getTotalAmount())
+            .totalAmount(subtotal)
             .serviceFee(serviceFee)
             .platformCommission(platformCommission)
             .destination(req.getDestination())

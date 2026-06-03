@@ -1,5 +1,6 @@
 package com.xplorica.dto;
 
+import com.xplorica.entity.DestinationItem;
 import com.xplorica.entity.User;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -18,10 +19,10 @@ public class RegisterRequest {
 
     // Guide-specific fields
     @Positive
-    private Double dailyRate; // required when role = GUIDE
+    private Double dailyRate;
     private String description;
     private String licenseNumber;
     private Integer yearsExperience;
     private List<String> languages;
-    private List<String> destinations;
+    private List<DestinationItem> destinations;
 }

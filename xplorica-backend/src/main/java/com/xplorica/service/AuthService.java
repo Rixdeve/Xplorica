@@ -54,8 +54,8 @@ public class AuthService {
                 .licenseNumber(req.getLicenseNumber())
                 .yearsExperience(req.getYearsExperience())
                 .languages(req.getLanguages() != null ? req.getLanguages() : new ArrayList<>())
-                .destinations(req.getDestinations() != null ? req.getDestinations() : new ArrayList<>())
-                .status(GuideProfile.Status.APPROVED)
+                .destinations(req.getDestinations() != null ? req.getDestinations() : new ArrayList<com.xplorica.entity.DestinationItem>())
+                .status(GuideProfile.Status.PENDING)
                 .build();
             guideRepo.save(profile);
             profileId = profile.getId();

@@ -13,13 +13,17 @@ import java.util.Optional;
 public interface GuideProfileRepository extends JpaRepository<GuideProfile, Long> {
     Optional<GuideProfile> findByUserId(Long userId);
 
+    List<GuideProfile> findByStatusOrderByIdDesc(GuideProfile.Status status);
+
+    List<GuideProfile> findAllByOrderByIdDesc();
+
     @Query("""
         SELECT DISTINCT g FROM GuideProfile g
          LEFT JOIN g.languages lang
          LEFT JOIN g.destinations dest
         WHERE g.status = 'APPROVED'
           AND (:language IS NULL OR LOWER(lang) LIKE LOWER(CONCAT('%', :language, '%')))
-          AND (:destination IS NULL OR LOWER(dest) LIKE LOWER(CONCAT('%', :destination, '%')))
+          AND (:destination IS NULL OR LOWER(dest.name) LIKE LOWER(CONCAT('%', :destination, '%')))
           AND (:minRating IS NULL OR g.averageRating >= :minRating)
         ORDER BY g.averageRating DESC
         """)

@@ -38,6 +38,6 @@ public class User {
     }
 
     public enum Role {
-        TOURIST, GUIDE
+        TOURIST, GUIDE, ADMIN
     }
 }
