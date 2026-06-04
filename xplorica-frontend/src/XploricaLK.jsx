@@ -1772,21 +1772,23 @@ function GuideDashboard({ user, onNav }) {
                             </span>
                           );
                         })()}
-                        <button
-                          onClick={async () => {
-                            if (!confirm("Are you sure you want to cancel this booking?")) return;
-                            try {
-                              await api.updateBookingStatus(b.id, "CANCELLED");
-                              setBookings(prev => prev.map(item => 
-                                item.id === b.id ? { ...item, status: "CANCELLED" } : item
-                              ));
-                            } catch (err) {
-                              alert("Failed to cancel booking: " + err.message);
-                            }
-                          }}
-                          className="flex-1 bg-slate-300 hover:bg-slate-400 text-slate-700 text-sm font-semibold py-2 px-3 rounded-xl transition">
-                          ✕ Cancel
-                        </button>
+                        {!(b.status === "CONFIRMED" && b.paymentStatus === "PAID") && (
+                          <button
+                            onClick={async () => {
+                              if (!confirm("Are you sure you want to cancel this booking?")) return;
+                              try {
+                                await api.updateBookingStatus(b.id, "CANCELLED");
+                                setBookings(prev => prev.map(item =>
+                                  item.id === b.id ? { ...item, status: "CANCELLED" } : item
+                                ));
+                              } catch (err) {
+                                alert("Failed to cancel booking: " + err.message);
+                              }
+                            }}
+                            className="flex-1 bg-slate-300 hover:bg-slate-400 text-slate-700 text-sm font-semibold py-2 px-3 rounded-xl transition">
+                            ✕ Cancel
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
