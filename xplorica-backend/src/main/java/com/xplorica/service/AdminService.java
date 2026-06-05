@@ -117,6 +117,22 @@ public class AdminService {
             .sorted(Comparator.comparingLong(AdminAnalyticsResponse.GuideRankEntry::getBookings).reversed())
             .limit(10).collect(Collectors.toList());
 
+        // ── Commission & service fee totals ──────────────────────────────
+        double totalCommission = paid.stream()
+            .mapToDouble(b -> b.getPlatformCommission() != null ? b.getPlatformCommission() : 0.0).sum();
+        double totalServiceFee = paid.stream()
+            .mapToDouble(b -> b.getServiceFee() != null ? b.getServiceFee() : 0.0).sum();
+
+        String currentMonth = YearMonth.now().format(DateTimeFormatter.ofPattern("MMM yy"));
+        double thisMonthCommission = paid.stream()
+            .filter(b -> b.getCreatedAt() != null
+                && YearMonth.from(b.getCreatedAt()).format(DateTimeFormatter.ofPattern("MMM yy")).equals(currentMonth))
+            .mapToDouble(b -> b.getPlatformCommission() != null ? b.getPlatformCommission() : 0.0).sum();
+        double thisMonthServiceFee = paid.stream()
+            .filter(b -> b.getCreatedAt() != null
+                && YearMonth.from(b.getCreatedAt()).format(DateTimeFormatter.ofPattern("MMM yy")).equals(currentMonth))
+            .mapToDouble(b -> b.getServiceFee() != null ? b.getServiceFee() : 0.0).sum();
+
         // ── Premium subscription revenue ──────────────────────────────────
         List<GuideProfile> allGuides = guideRepo.findAll();
         long activePremium = allGuides.stream().filter(GuideProfile::isEffectivelyPremium).count();
@@ -133,6 +149,10 @@ public class AdminService {
         resp.setActivePremiumGuides((int) activePremium);
         resp.setEstimatedPremiumRevenue(activePremium * 10.0);
         resp.setTotalPremiumAllTime(everPremium * 10.0);
+        resp.setTotalCommissionAllTime(totalCommission);
+        resp.setTotalServiceFeeAllTime(totalServiceFee);
+        resp.setThisMonthCommission(thisMonthCommission);
+        resp.setThisMonthServiceFee(thisMonthServiceFee);
         return resp;
     }
 

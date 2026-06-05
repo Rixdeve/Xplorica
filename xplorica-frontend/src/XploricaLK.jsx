@@ -2418,34 +2418,39 @@ function AdminDashboard({ user, onLogout }) {
                   <h3 className="font-bold text-slate-800 mb-1">Booking Income</h3>
                   <p className="text-xs text-slate-400 mb-5">From paid bookings — commission + service charge</p>
                   {(() => {
-                    const totalCommission = Object.values(analytics.yearlyRevenue || {}).reduce((a, b) => a + b, 0);
-                    const thisMonth = (Object.values(analytics.monthlyRevenue || {}).slice(-1)[0] || 0);
+                    const commission  = analytics.totalCommissionAllTime ?? 0;
+                    const serviceFee  = analytics.totalServiceFeeAllTime  ?? 0;
+                    const total       = commission + serviceFee;
+                    const mComm       = analytics.thisMonthCommission  ?? 0;
+                    const mFee        = analytics.thisMonthServiceFee  ?? 0;
                     return (
                       <div className="space-y-3">
                         <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
                           <div>
                             <p className="text-sm font-semibold text-slate-700">Commission (15%)</p>
-                            <p className="text-xs text-slate-400">Platform cut from each tour payment</p>
+                            <p className="text-xs text-slate-400">Platform cut from each paid tour</p>
                           </div>
-                          <span className="text-lg font-black text-slate-800">
-                            ${(totalCommission * 0.6).toFixed(2)}
-                          </span>
+                          <div className="text-right">
+                            <p className="text-base font-black text-slate-800">${commission.toFixed(2)}</p>
+                            <p className="text-xs text-slate-400">this month: ${mComm.toFixed(2)}</p>
+                          </div>
                         </div>
                         <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
                           <div>
                             <p className="text-sm font-semibold text-slate-700">Service Charges</p>
-                            <p className="text-xs text-slate-400">Tourist service fee ($2–$5 per booking)</p>
+                            <p className="text-xs text-slate-400">Tourist service fee per booking ($2–$5)</p>
                           </div>
-                          <span className="text-lg font-black text-slate-800">
-                            ${(totalCommission * 0.4).toFixed(2)}
-                          </span>
+                          <div className="text-right">
+                            <p className="text-base font-black text-slate-800">${serviceFee.toFixed(2)}</p>
+                            <p className="text-xs text-slate-400">this month: ${mFee.toFixed(2)}</p>
+                          </div>
                         </div>
                         <div className="flex justify-between items-center py-2.5">
                           <div>
                             <p className="text-sm font-bold text-slate-800">Total Booking Revenue</p>
-                            <p className="text-xs text-slate-400">This month: ${thisMonth.toFixed(2)}</p>
+                            <p className="text-xs text-slate-400">this month: ${(mComm + mFee).toFixed(2)}</p>
                           </div>
-                          <span className="text-xl font-black text-blue-700">${totalCommission.toFixed(2)}</span>
+                          <span className="text-xl font-black text-blue-700">${total.toFixed(2)}</span>
                         </div>
                       </div>
                     );
@@ -2491,7 +2496,7 @@ function AdminDashboard({ user, onLogout }) {
                 {[
                   {
                     label: "Total Booking Revenue",
-                    value: "$" + Object.values(analytics.yearlyRevenue || {}).reduce((a, b) => a + b, 0).toFixed(2),
+                    value: "$" + ((analytics.totalCommissionAllTime ?? 0) + (analytics.totalServiceFeeAllTime ?? 0)).toFixed(2),
                     sub: "Commission + service fees all-time",
                   },
                   {

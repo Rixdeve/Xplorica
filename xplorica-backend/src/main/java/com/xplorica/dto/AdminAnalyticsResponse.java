@@ -17,6 +17,10 @@ public class AdminAnalyticsResponse {
     private int    activePremiumGuides;
     private double estimatedPremiumRevenue;
     private double totalPremiumAllTime;
+    private double totalCommissionAllTime;
+    private double totalServiceFeeAllTime;
+    private double thisMonthCommission;
+    private double thisMonthServiceFee;
 
     @Data
     @NoArgsConstructor
