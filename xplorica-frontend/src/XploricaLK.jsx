@@ -165,6 +165,44 @@ const HorizBarChart = ({ data = {}, color = "#2563eb" }) => {
   );
 };
 
+const PIE_COLORS = ["#2563eb","#10b981","#f59e0b","#8b5cf6","#ef4444","#06b6d4","#f97316","#84cc16"];
+
+const PieChart = ({ data = {}, size = 150 }) => {
+  const entries = Object.entries(data).slice(0, 8);
+  const total = entries.reduce((s, [, v]) => s + Number(v), 0);
+  if (total === 0) return <p className="text-slate-400 text-sm py-4">No data yet</p>;
+  const r = size / 2 - 8;
+  const cx = size / 2, cy = size / 2;
+  let angle = -Math.PI / 2;
+  const slices = entries.map(([label, val], i) => {
+    const pct = Number(val) / total;
+    const a0 = angle;
+    angle += pct * 2 * Math.PI;
+    const a1 = angle;
+    const x0 = cx + r * Math.cos(a0), y0 = cy + r * Math.sin(a0);
+    const x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
+    return { label, val: Number(val), pct, color: PIE_COLORS[i % PIE_COLORS.length],
+      d: `M ${cx} ${cy} L ${x0.toFixed(1)} ${y0.toFixed(1)} A ${r} ${r} 0 ${pct > 0.5 ? 1 : 0} 1 ${x1.toFixed(1)} ${y1.toFixed(1)} Z` };
+  });
+  return (
+    <div className="flex items-start gap-5">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
+        {slices.map(s => <path key={s.label} d={s.d} fill={s.color} stroke="white" strokeWidth="1.5" />)}
+      </svg>
+      <div className="space-y-1.5 min-w-0 flex-1">
+        {slices.map(s => (
+          <div key={s.label} className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-sm shrink-0" style={{ background: s.color }} />
+            <span className="text-xs text-slate-600 truncate flex-1">{s.label}</span>
+            <span className="text-xs font-semibold text-slate-800 tabular-nums">{s.val}</span>
+            <span className="text-xs text-slate-400 w-8 text-right tabular-nums">{(s.pct * 100).toFixed(0)}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const Spinner = () => (
   <div className="flex justify-center items-center py-16">
     <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
@@ -1935,6 +1973,9 @@ function AdminDashboard({ user, onLogout }) {
   const [tourFilter, setTourFilter]       = useState("ALL");
   const [tourSearch, setTourSearch]       = useState("");
   const [tourPayFilter, setTourPayFilter] = useState("ALL");
+  const [analytics, setAnalytics]         = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [incomeView, setIncomeView]       = useState("monthly");
 
   const load = (status) => {
     setLoading(true);
@@ -1953,6 +1994,16 @@ function AdminDashboard({ user, onLogout }) {
       .then(data => setTours(data || []))
       .catch(() => setTours([]))
       .finally(() => setToursLoading(false));
+  }, [section]);
+
+  useEffect(() => {
+    if (section !== "financials") return;
+    if (analytics) return;
+    setAnalyticsLoading(true);
+    api.adminGetAnalytics()
+      .then(data => setAnalytics(data))
+      .catch(() => setAnalytics(null))
+      .finally(() => setAnalyticsLoading(false));
   }, [section]);
 
   const action = async (id, type) => {
@@ -2005,8 +2056,9 @@ function AdminDashboard({ user, onLogout }) {
         {/* Section tabs */}
         <div className="flex gap-3 mb-8">
           {[
-            { key: "guides", label: "Guide Approvals", icon: "👤" },
-            { key: "tours",  label: "All Tours",       icon: "🗺" },
+            { key: "guides",     label: "Guide Approvals", icon: "👤" },
+            { key: "tours",      label: "All Tours",       icon: "🗺" },
+            { key: "financials", label: "Financials",      icon: "📊" },
           ].map(s => (
             <button key={s.key} onClick={() => setSection(s.key)}
               className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-semibold text-sm transition-all ${section === s.key ? "bg-blue-700 text-white shadow-md" : "bg-white text-slate-600 border border-slate-200 hover:border-blue-300 hover:text-blue-600"}`}>
@@ -2287,6 +2339,112 @@ function AdminDashboard({ user, onLogout }) {
             );
           })()}
         </>}
+
+        {/* ── Financials Section ── */}
+        {section === "financials" && (
+          analyticsLoading ? <Spinner /> : !analytics ? (
+            <div className="text-center py-16 text-slate-400">
+              <p className="font-semibold">Could not load analytics</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+
+              {/* Revenue chart */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-800">Platform Revenue</h2>
+                    <p className="text-xs text-slate-400 mt-0.5">Commission earned from paid bookings</p>
+                  </div>
+                  <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
+                    {[
+                      { key: "daily",   label: "Daily"   },
+                      { key: "monthly", label: "Monthly" },
+                      { key: "yearly",  label: "Yearly"  },
+                    ].map(v => (
+                      <button key={v.key} onClick={() => setIncomeView(v.key)}
+                        className={`px-3 py-1 text-xs font-semibold rounded-md transition ${incomeView === v.key ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                        {v.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <BarChart
+                  data={incomeView === "daily" ? analytics.dailyRevenue : incomeView === "monthly" ? analytics.monthlyRevenue : analytics.yearlyRevenue}
+                  prefix="$"
+                  color="#2563eb"
+                />
+              </div>
+
+              {/* Rankings row */}
+              <div className="grid grid-cols-3 gap-6">
+
+                {/* Destination rank */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-6">
+                  <h3 className="font-bold text-slate-800 mb-1">Top Destinations</h3>
+                  <p className="text-xs text-slate-400 mb-5">By number of bookings</p>
+                  {Object.keys(analytics.destinationRank || {}).length === 0
+                    ? <p className="text-slate-400 text-sm">No data yet</p>
+                    : <PieChart data={analytics.destinationRank} />}
+                </div>
+
+                {/* Language rank */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-6">
+                  <h3 className="font-bold text-slate-800 mb-1">Guide Languages</h3>
+                  <p className="text-xs text-slate-400 mb-5">Approved guides per language</p>
+                  {Object.keys(analytics.languageRank || {}).length === 0
+                    ? <p className="text-slate-400 text-sm">No data yet</p>
+                    : <PieChart data={analytics.languageRank} />}
+                </div>
+
+                {/* Guide rank */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-6">
+                  <h3 className="font-bold text-slate-800 mb-1">Top Guides</h3>
+                  <p className="text-xs text-slate-400 mb-5">Ranked by confirmed bookings</p>
+                  {(analytics.guideRank || []).length === 0
+                    ? <p className="text-slate-400 text-sm">No data yet</p>
+                    : <HorizBarChart
+                        data={Object.fromEntries((analytics.guideRank).map(g => [g.name, g.bookings]))}
+                        color="#10b981"
+                      />}
+                </div>
+              </div>
+
+              {/* Summary cards */}
+              <div className="grid grid-cols-4 gap-4">
+                {[
+                  {
+                    label: "Total Revenue",
+                    value: "$" + Object.values(analytics.yearlyRevenue || {}).reduce((a, b) => a + b, 0).toFixed(2),
+                    sub: "All-time platform commission",
+                  },
+                  {
+                    label: "This Month",
+                    value: "$" + (Object.values(analytics.monthlyRevenue || {}).slice(-1)[0] || 0).toFixed(2),
+                    sub: "Commission this month",
+                  },
+                  {
+                    label: "Destinations",
+                    value: Object.keys(analytics.destinationRank || {}).length,
+                    sub: "Active tour areas",
+                  },
+                  {
+                    label: "Active Guides",
+                    value: (analytics.guideRank || []).length,
+                    sub: "With at least one booking",
+                  },
+                ].map(c => (
+                  <div key={c.label} className="bg-white rounded-2xl border border-slate-200 p-5">
+                    <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">{c.label}</p>
+                    <p className="text-2xl font-black text-slate-800 mt-2">{c.value}</p>
+                    <p className="text-xs text-slate-400 mt-1">{c.sub}</p>
+                  </div>
+                ))}
+              </div>
+
+            </div>
+          )
+        )}
       </div>
     </div>
   );

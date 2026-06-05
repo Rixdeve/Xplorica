@@ -238,6 +238,14 @@ class AdminController {
         return ResponseEntity.ok(adminService.setStatus(id, com.xplorica.entity.GuideProfile.Status.APPROVED));
     }
 
+    @GetMapping("/analytics")
+    public ResponseEntity<com.xplorica.dto.AdminAnalyticsResponse> analytics(
+        @AuthenticationPrincipal UserDetails currentUser
+    ) {
+        requireAdmin(currentUser);
+        return ResponseEntity.ok(adminService.getAnalytics());
+    }
+
     @GetMapping("/bookings")
     public ResponseEntity<java.util.List<com.xplorica.dto.BookingResponse>> listBookings(
         @AuthenticationPrincipal UserDetails currentUser
