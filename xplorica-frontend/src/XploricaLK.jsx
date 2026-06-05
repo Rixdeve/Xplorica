@@ -1928,7 +1928,11 @@ function AdminDashboard({ user, onLogout }) {
   const [guides, setGuides]       = useState([]);
   const [loading, setLoading]     = useState(true);
   const [filter, setFilter]       = useState("PENDING");
-  const [actionLoading, setActionLoading] = useState(null); // guide id being actioned
+  const [actionLoading, setActionLoading] = useState(null);
+  const [section, setSection]             = useState("guides");
+  const [tours, setTours]                 = useState([]);
+  const [toursLoading, setToursLoading]   = useState(false);
+  const [tourFilter, setTourFilter]       = useState("ALL");
 
   const load = (status) => {
     setLoading(true);
@@ -1939,6 +1943,15 @@ function AdminDashboard({ user, onLogout }) {
   };
 
   useEffect(() => { load(filter); }, [filter]);
+
+  useEffect(() => {
+    if (section !== "tours") return;
+    setToursLoading(true);
+    api.adminGetAllBookings()
+      .then(data => setTours(data || []))
+      .catch(() => setTours([]))
+      .finally(() => setToursLoading(false));
+  }, [section]);
 
   const action = async (id, type) => {
     setActionLoading(id);
@@ -1983,10 +1996,24 @@ function AdminDashboard({ user, onLogout }) {
 
       <div className="max-w-6xl mx-auto px-6 py-10">
         <div className="mb-8">
-          <h1 className="text-3xl font-black text-blue-950">Guide Approvals</h1>
-          <p className="text-slate-500 mt-1">Review and approve guide account applications.</p>
+          <h1 className="text-3xl font-black text-blue-950">Admin Panel</h1>
+          <p className="text-slate-500 mt-1">Manage guide approvals and view all tour bookings.</p>
         </div>
 
+        {/* Section tabs */}
+        <div className="flex gap-3 mb-8">
+          {[
+            { key: "guides", label: "Guide Approvals", icon: "👤" },
+            { key: "tours",  label: "All Tours",       icon: "🗺" },
+          ].map(s => (
+            <button key={s.key} onClick={() => setSection(s.key)}
+              className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-semibold text-sm transition-all ${section === s.key ? "bg-blue-700 text-white shadow-md" : "bg-white text-slate-600 border border-slate-200 hover:border-blue-300 hover:text-blue-600"}`}>
+              {s.icon} {s.label}
+            </button>
+          ))}
+        </div>
+
+        {section === "guides" && <>
         {/* Filter tabs */}
         <div className="flex gap-2 bg-white rounded-xl p-1 border border-slate-200 w-fit mb-6">
           {TABS.map(t => (
@@ -2111,6 +2138,109 @@ function AdminDashboard({ user, onLogout }) {
             ))}
           </div>
         )}
+        </>}
+
+        {/* Tours Section */}
+        {section === "tours" && <>
+          <div className="flex gap-2 bg-white rounded-xl p-1 border border-slate-200 w-fit mb-6 flex-wrap">
+            {["ALL", "PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"].map(s => (
+              <button key={s} onClick={() => setTourFilter(s)}
+                className={`px-5 py-2 text-sm font-semibold rounded-lg transition ${tourFilter === s ? "bg-blue-700 text-white shadow" : "text-slate-500 hover:text-slate-700"}`}>
+                {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
+              </button>
+            ))}
+          </div>
+
+          {toursLoading ? <Spinner /> : (() => {
+            const TOUR_STATUS_COLORS = { PENDING: "amber", CONFIRMED: "blue", COMPLETED: "emerald", CANCELLED: "slate" };
+            const filtered = tourFilter === "ALL" ? tours : tours.filter(b => b.status === tourFilter);
+            return filtered.length === 0 ? (
+              <div className="text-center py-20 text-slate-400">
+                <p className="text-5xl mb-4">🗺</p>
+                <p className="text-lg font-semibold">No {tourFilter !== "ALL" ? tourFilter.toLowerCase() : ""} tours found</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filtered.map(b => {
+                  const days = b.startDate && b.endDate
+                    ? Math.round((new Date(b.endDate) - new Date(b.startDate)) / 86400000) + 1
+                    : null;
+                  return (
+                    <div key={b.id} className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                      <div className="p-6">
+                        <div className="flex items-center justify-between mb-5">
+                          <span className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
+                            Booking #{b.id}
+                          </span>
+                          <div className="flex gap-2 flex-wrap justify-end">
+                            <Badge color={TOUR_STATUS_COLORS[b.status] || "slate"}>{b.status}</Badge>
+                            {b.paymentStatus === "PAID"
+                              ? <Badge color="emerald">✓ Paid</Badge>
+                              : b.status !== "CANCELLED" && <Badge color="amber">Unpaid</Badge>}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-4">
+                          {/* Tourist */}
+                          <div className="bg-blue-50 rounded-2xl p-4">
+                            <p className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-3">Tourist</p>
+                            <div className="flex items-center gap-3 mb-3">
+                              <Avatar name={b.touristName || "Tourist"} size={36} />
+                              <div className="min-w-0">
+                                <p className="font-bold text-blue-950 text-sm truncate">{b.touristName || "—"}</p>
+                                {b.touristEmail && (
+                                  <p className="text-xs text-slate-500 truncate">{b.touristEmail}</p>
+                                )}
+                              </div>
+                            </div>
+                            <p className="text-xs text-slate-500">
+                              👥 {b.numberOfPeople || 1} {(b.numberOfPeople || 1) === 1 ? "person" : "people"}
+                            </p>
+                          </div>
+
+                          {/* Guide */}
+                          <div className="bg-emerald-50 rounded-2xl p-4">
+                            <p className="text-xs font-bold text-emerald-500 uppercase tracking-wider mb-3">Guide</p>
+                            <div className="flex items-center gap-3 mb-3">
+                              <Avatar name={b.guideName || "Guide"} size={36} />
+                              <div className="min-w-0">
+                                <p className="font-bold text-blue-950 text-sm truncate">{b.guideName || "—"}</p>
+                                {b.guideEmail && (
+                                  <p className="text-xs text-slate-500 truncate">{b.guideEmail}</p>
+                                )}
+                              </div>
+                            </div>
+                            {b.guideLicense && (
+                              <p className="text-xs text-slate-500">🪪 {b.guideLicense}</p>
+                            )}
+                          </div>
+
+                          {/* Tour Info */}
+                          <div className="bg-slate-50 rounded-2xl p-4">
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Tour Info</p>
+                            <div className="space-y-1.5">
+                              <p className="text-slate-700 text-xs">
+                                📅 {b.startDate} → {b.endDate}
+                                {days ? <span className="text-slate-400 ml-1">({days}d)</span> : ""}
+                              </p>
+                              {b.destination && (
+                                <p className="text-slate-700 text-xs">📍 {b.destination}</p>
+                              )}
+                              <p className="font-bold text-blue-950 text-sm mt-2">
+                                💰 ${((b.totalAmount || 0) + (b.serviceFee || 0)).toFixed(2)}
+                                <span className="font-normal text-slate-400 text-xs ml-1">total</span>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </>}
       </div>
     </div>
   );

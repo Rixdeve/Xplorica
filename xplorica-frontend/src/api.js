@@ -166,3 +166,6 @@ export const adminRejectGuide = (id) =>
     method: "POST",
     headers: bearerHeaders(),
   }).then(handleResponse);
+
+export const adminGetAllBookings = () =>
+  fetch(`${API_URL}/api/admin/bookings`, { headers: bearerHeaders() }).then(handleResponse);
