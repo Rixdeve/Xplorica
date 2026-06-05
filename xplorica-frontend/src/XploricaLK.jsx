@@ -1551,8 +1551,8 @@ function GuideDashboard({ user, onNav }) {
           <h1 className="text-2xl font-black text-blue-950">Guide Dashboard</h1>
           <p className="text-slate-500">Welcome back, {user.fullName}</p>
         </div>
-        <Badge color={profileStatus === "APPROVED" ? "emerald" : "amber"}>
-          {profileStatus === "APPROVED" ? "✓ Approved" : "⏳ Pending Approval"}
+        <Badge color={profileStatus === "APPROVED" ? "emerald" : profileStatus === "REJECTED" ? "slate" : "amber"}>
+          {profileStatus === "APPROVED" ? "✓ Approved" : profileStatus === "REJECTED" ? "✕ Rejected" : "⏳ Pending Approval"}
         </Badge>
       </div>
 
