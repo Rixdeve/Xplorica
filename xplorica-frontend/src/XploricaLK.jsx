@@ -1933,6 +1933,7 @@ function AdminDashboard({ user, onLogout }) {
   const [tours, setTours]                 = useState([]);
   const [toursLoading, setToursLoading]   = useState(false);
   const [tourFilter, setTourFilter]       = useState("ALL");
+  const [tourSearch, setTourSearch]       = useState("");
 
   const load = (status) => {
     setLoading(true);
@@ -2142,97 +2143,119 @@ function AdminDashboard({ user, onLogout }) {
 
         {/* Tours Section */}
         {section === "tours" && <>
-          <div className="flex gap-2 bg-white rounded-xl p-1 border border-slate-200 w-fit mb-6 flex-wrap">
-            {["ALL", "PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"].map(s => (
-              <button key={s} onClick={() => setTourFilter(s)}
-                className={`px-5 py-2 text-sm font-semibold rounded-lg transition ${tourFilter === s ? "bg-blue-700 text-white shadow" : "text-slate-500 hover:text-slate-700"}`}>
-                {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
-              </button>
-            ))}
+          {/* Search + filter bar */}
+          <div className="flex flex-wrap items-center gap-3 mb-5">
+            <div className="relative flex-1 min-w-48">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+              <input
+                value={tourSearch}
+                onChange={e => setTourSearch(e.target.value)}
+                placeholder="Search by tourist, guide, destination or ID…"
+                className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              />
+            </div>
+            <div className="flex gap-1 bg-white rounded-xl p-1 border border-slate-200">
+              {["ALL", "PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"].map(s => (
+                <button key={s} onClick={() => setTourFilter(s)}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition ${tourFilter === s ? "bg-blue-700 text-white shadow" : "text-slate-500 hover:text-slate-700"}`}>
+                  {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
+                </button>
+              ))}
+            </div>
           </div>
 
           {toursLoading ? <Spinner /> : (() => {
             const TOUR_STATUS_COLORS = { PENDING: "amber", CONFIRMED: "blue", COMPLETED: "emerald", CANCELLED: "slate" };
-            const filtered = tourFilter === "ALL" ? tours : tours.filter(b => b.status === tourFilter);
+            const q = tourSearch.trim().toLowerCase();
+            const filtered = (tourFilter === "ALL" ? tours : tours.filter(b => b.status === tourFilter))
+              .filter(b => !q || [b.touristName, b.guideName, b.destination, String(b.id)]
+                .some(v => v?.toLowerCase().includes(q)));
+
             return filtered.length === 0 ? (
-              <div className="text-center py-20 text-slate-400">
-                <p className="text-5xl mb-4">🗺</p>
-                <p className="text-lg font-semibold">No {tourFilter !== "ALL" ? tourFilter.toLowerCase() : ""} tours found</p>
+              <div className="text-center py-16 text-slate-400">
+                <p className="text-4xl mb-3">🗺</p>
+                <p className="font-semibold">No tours match your search</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {filtered.map(b => {
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                {/* Table header */}
+                <div className="grid gap-3 px-4 py-2.5 border-b border-slate-100 bg-slate-50 text-xs font-bold text-slate-400 uppercase tracking-wider"
+                  style={{ gridTemplateColumns: "48px 1fr 1fr 1.4fr 140px 150px" }}>
+                  <span>#</span>
+                  <span>Tourist</span>
+                  <span>Guide</span>
+                  <span>Tour</span>
+                  <span>Amount / Fees</span>
+                  <span>Status</span>
+                </div>
+
+                {/* Rows */}
+                {filtered.map((b, i) => {
                   const days = b.startDate && b.endDate
                     ? Math.round((new Date(b.endDate) - new Date(b.startDate)) / 86400000) + 1
                     : null;
                   return (
-                    <div key={b.id} className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-                      <div className="p-6">
-                        <div className="flex items-center justify-between mb-5">
-                          <span className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
-                            Booking #{b.id}
+                    <div key={b.id}
+                      className={`grid gap-3 px-4 py-3 items-center border-b border-slate-50 last:border-0 hover:bg-blue-50/40 transition-colors ${i % 2 === 1 ? "bg-slate-50/50" : ""}`}
+                      style={{ gridTemplateColumns: "48px 1fr 1fr 1.4fr 72px 150px" }}>
+
+                      {/* ID */}
+                      <span className="text-xs text-slate-400 font-mono font-bold">#{b.id}</span>
+
+                      {/* Tourist */}
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Avatar name={b.touristName || "?"} size={26} />
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-blue-950 truncate leading-tight">{b.touristName || "—"}</p>
+                          <p className="text-xs text-slate-400">👥 {b.numberOfPeople || 1}</p>
+                        </div>
+                      </div>
+
+                      {/* Guide */}
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Avatar name={b.guideName || "?"} size={26} />
+                        <p className="text-sm font-semibold text-blue-950 truncate">{b.guideName || "—"}</p>
+                      </div>
+
+                      {/* Tour info */}
+                      <div className="min-w-0">
+                        <p className="text-xs text-slate-600 leading-tight">
+                          📅 {b.startDate} → {b.endDate}{days ? <span className="text-slate-400"> · {days}d</span> : ""}
+                        </p>
+                        {b.destination && (
+                          <p className="text-xs text-slate-400 truncate mt-0.5">📍 {b.destination}</p>
+                        )}
+                      </div>
+
+                      {/* Amount / Fees */}
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-bold text-blue-950">
+                          ${((b.totalAmount || 0) + (b.serviceFee || 0)).toFixed(2)}
+                        </p>
+                        <div className="flex justify-between text-xs text-slate-400">
+                          <span>Svc fee</span>
+                          <span className="font-medium text-slate-500">${(b.serviceFee || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-slate-400">
+                          <span>Commission</span>
+                          <span className="font-medium text-emerald-600">${(b.platformCommission || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs border-t border-slate-100 pt-0.5">
+                          <span className="text-slate-400">Guide gets</span>
+                          <span className="font-bold text-blue-700">
+                            ${((b.totalAmount || 0) - (b.platformCommission || 0)).toFixed(2)}
                           </span>
-                          <div className="flex gap-2 flex-wrap justify-end">
-                            <Badge color={TOUR_STATUS_COLORS[b.status] || "slate"}>{b.status}</Badge>
-                            {b.paymentStatus === "PAID"
-                              ? <Badge color="emerald">✓ Paid</Badge>
-                              : b.status !== "CANCELLED" && <Badge color="amber">Unpaid</Badge>}
-                          </div>
                         </div>
+                      </div>
 
-                        <div className="grid grid-cols-3 gap-4">
-                          {/* Tourist */}
-                          <div className="bg-blue-50 rounded-2xl p-4">
-                            <p className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-3">Tourist</p>
-                            <div className="flex items-center gap-3 mb-3">
-                              <Avatar name={b.touristName || "Tourist"} size={36} />
-                              <div className="min-w-0">
-                                <p className="font-bold text-blue-950 text-sm truncate">{b.touristName || "—"}</p>
-                                {b.touristEmail && (
-                                  <p className="text-xs text-slate-500 truncate">{b.touristEmail}</p>
-                                )}
-                              </div>
-                            </div>
-                            <p className="text-xs text-slate-500">
-                              👥 {b.numberOfPeople || 1} {(b.numberOfPeople || 1) === 1 ? "person" : "people"}
-                            </p>
-                          </div>
-
-                          {/* Guide */}
-                          <div className="bg-emerald-50 rounded-2xl p-4">
-                            <p className="text-xs font-bold text-emerald-500 uppercase tracking-wider mb-3">Guide</p>
-                            <div className="flex items-center gap-3 mb-3">
-                              <Avatar name={b.guideName || "Guide"} size={36} />
-                              <div className="min-w-0">
-                                <p className="font-bold text-blue-950 text-sm truncate">{b.guideName || "—"}</p>
-                                {b.guideEmail && (
-                                  <p className="text-xs text-slate-500 truncate">{b.guideEmail}</p>
-                                )}
-                              </div>
-                            </div>
-                            {b.guideLicense && (
-                              <p className="text-xs text-slate-500">🪪 {b.guideLicense}</p>
-                            )}
-                          </div>
-
-                          {/* Tour Info */}
-                          <div className="bg-slate-50 rounded-2xl p-4">
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Tour Info</p>
-                            <div className="space-y-1.5">
-                              <p className="text-slate-700 text-xs">
-                                📅 {b.startDate} → {b.endDate}
-                                {days ? <span className="text-slate-400 ml-1">({days}d)</span> : ""}
-                              </p>
-                              {b.destination && (
-                                <p className="text-slate-700 text-xs">📍 {b.destination}</p>
-                              )}
-                              <p className="font-bold text-blue-950 text-sm mt-2">
-                                💰 ${((b.totalAmount || 0) + (b.serviceFee || 0)).toFixed(2)}
-                                <span className="font-normal text-slate-400 text-xs ml-1">total</span>
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                      {/* Status badges */}
+                      <div className="flex gap-1 flex-wrap">
+                        <Badge color={TOUR_STATUS_COLORS[b.status] || "slate"}>
+                          {b.status.charAt(0) + b.status.slice(1).toLowerCase()}
+                        </Badge>
+                        {b.paymentStatus === "PAID"
+                          ? <Badge color="emerald">Paid</Badge>
+                          : b.status !== "CANCELLED" && <Badge color="amber">Unpaid</Badge>}
                       </div>
                     </div>
                   );
