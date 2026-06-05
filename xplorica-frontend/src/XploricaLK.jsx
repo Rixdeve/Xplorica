@@ -1987,25 +1987,6 @@ function AdminDashboard({ user, onLogout }) {
           <p className="text-slate-500 mt-1">Review and approve guide account applications.</p>
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          {[
-            { label: "Pending Review", status: "PENDING",  icon: "⏳", bg: "from-amber-50 to-amber-100",    num: "text-amber-700" },
-            { label: "Approved",       status: "APPROVED", icon: "✅", bg: "from-emerald-50 to-emerald-100", num: "text-emerald-700" },
-            { label: "Rejected",       status: "REJECTED", icon: "✕",  bg: "from-slate-50 to-slate-100",     num: "text-slate-600" },
-          ].map(s => (
-            <button key={s.status} onClick={() => setFilter(s.status)}
-              className={`bg-gradient-to-br ${s.bg} rounded-2xl p-5 text-left border-2 transition-all ${filter === s.status ? "border-blue-400 shadow-md" : "border-transparent"}`}>
-              <div className="text-2xl mb-1">{s.icon}</div>
-              <p className={`text-2xl font-black ${s.num}`}>
-                {guides.filter(g => filter === "ALL" ? true : true).length > 0 || filter === s.status
-                  ? <span>—</span> : "0"}
-              </p>
-              <p className="text-xs text-slate-500 mt-1">{s.label}</p>
-            </button>
-          ))}
-        </div>
-
         {/* Filter tabs */}
         <div className="flex gap-2 bg-white rounded-xl p-1 border border-slate-200 w-fit mb-6">
           {TABS.map(t => (
