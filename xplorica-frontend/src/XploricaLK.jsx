@@ -1688,10 +1688,20 @@ function GuideDashboard({ user, onNav }) {
                 <p className="font-bold text-blue-950">{user.fullName}</p>
                 <p className="text-sm text-slate-500">{user.email}</p>
               </div>
-              {profileStatus !== "APPROVED" && (
+              {profileStatus === "PENDING" && (
                 <div className="bg-amber-50 rounded-3xl p-5 border border-amber-100">
                   <p className="text-amber-800 text-sm font-semibold mb-2">⏳ Awaiting Approval</p>
                   <p className="text-amber-700 text-xs">Your profile is under review. You'll be notified once approved.</p>
+                </div>
+              )}
+              {profileStatus === "REJECTED" && (
+                <div className="bg-red-50 rounded-3xl p-5 border border-red-200">
+                  <p className="text-red-700 text-sm font-semibold mb-2">✕ Application Rejected</p>
+                  <p className="text-red-600 text-xs leading-relaxed">Your guide application was not approved. Please contact Xplorica for more information and assistance.</p>
+                  <a href="mailto:support@xplorica.lk"
+                    className="inline-block mt-3 text-xs font-semibold text-red-700 underline underline-offset-2 hover:text-red-900 transition">
+                    Contact support@xplorica.lk
+                  </a>
                 </div>
               )}
               {/* Premium status card */}
