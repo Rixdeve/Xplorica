@@ -19,6 +19,8 @@ public class AdminAnalyticsResponse {
     private double totalPremiumAllTime;
     private double totalCommissionAllTime;
     private double totalServiceFeeAllTime;
+    private double collectedCommission;
+    private double collectedServiceFee;
     private double thisMonthCommission;
     private double thisMonthServiceFee;
 

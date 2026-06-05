@@ -118,20 +118,32 @@ public class AdminService {
             .limit(10).collect(Collectors.toList());
 
         // ── Commission & service fee totals ──────────────────────────────
-        double totalCommission = paid.stream()
-            .mapToDouble(b -> b.getPlatformCommission() != null ? b.getPlatformCommission() : 0.0).sum();
-        double totalServiceFee = paid.stream()
-            .mapToDouble(b -> b.getServiceFee() != null ? b.getServiceFee() : 0.0).sum();
+        // All non-cancelled tours — commission/service fee is set at booking creation
+        List<Booking> active = all.stream()
+            .filter(b -> b.getStatus() != Booking.Status.CANCELLED)
+            .toList();
 
+        double totalCommission = active.stream()
+            .mapToDouble(b -> b.getPlatformCommission() != null ? b.getPlatformCommission() : 0.0).sum();
+        double totalServiceFee = active.stream()
+            .mapToDouble(b -> b.getServiceFee()         != null ? b.getServiceFee()         : 0.0).sum();
+
+        // Collected = only bookings where payment was received
+        double collectedCommission = paid.stream()
+            .mapToDouble(b -> b.getPlatformCommission() != null ? b.getPlatformCommission() : 0.0).sum();
+        double collectedServiceFee = paid.stream()
+            .mapToDouble(b -> b.getServiceFee()         != null ? b.getServiceFee()         : 0.0).sum();
+
+        // This month (all non-cancelled)
         String currentMonth = YearMonth.now().format(DateTimeFormatter.ofPattern("MMM yy"));
-        double thisMonthCommission = paid.stream()
+        double thisMonthCommission = active.stream()
             .filter(b -> b.getCreatedAt() != null
                 && YearMonth.from(b.getCreatedAt()).format(DateTimeFormatter.ofPattern("MMM yy")).equals(currentMonth))
             .mapToDouble(b -> b.getPlatformCommission() != null ? b.getPlatformCommission() : 0.0).sum();
-        double thisMonthServiceFee = paid.stream()
+        double thisMonthServiceFee = active.stream()
             .filter(b -> b.getCreatedAt() != null
                 && YearMonth.from(b.getCreatedAt()).format(DateTimeFormatter.ofPattern("MMM yy")).equals(currentMonth))
-            .mapToDouble(b -> b.getServiceFee() != null ? b.getServiceFee() : 0.0).sum();
+            .mapToDouble(b -> b.getServiceFee()         != null ? b.getServiceFee()         : 0.0).sum();
 
         // ── Premium subscription revenue ──────────────────────────────────
         List<GuideProfile> allGuides = guideRepo.findAll();
@@ -151,6 +163,8 @@ public class AdminService {
         resp.setTotalPremiumAllTime(everPremium * 10.0);
         resp.setTotalCommissionAllTime(totalCommission);
         resp.setTotalServiceFeeAllTime(totalServiceFee);
+        resp.setCollectedCommission(collectedCommission);
+        resp.setCollectedServiceFee(collectedServiceFee);
         resp.setThisMonthCommission(thisMonthCommission);
         resp.setThisMonthServiceFee(thisMonthServiceFee);
         return resp;

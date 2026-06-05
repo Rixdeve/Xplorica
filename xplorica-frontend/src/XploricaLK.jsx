@@ -2418,39 +2418,52 @@ function AdminDashboard({ user, onLogout }) {
                   <h3 className="font-bold text-slate-800 mb-1">Booking Income</h3>
                   <p className="text-xs text-slate-400 mb-5">From paid bookings — commission + service charge</p>
                   {(() => {
-                    const commission  = analytics.totalCommissionAllTime ?? 0;
-                    const serviceFee  = analytics.totalServiceFeeAllTime  ?? 0;
-                    const total       = commission + serviceFee;
-                    const mComm       = analytics.thisMonthCommission  ?? 0;
-                    const mFee        = analytics.thisMonthServiceFee  ?? 0;
+                    const commission      = analytics.totalCommissionAllTime ?? 0;
+                    const serviceFee      = analytics.totalServiceFeeAllTime  ?? 0;
+                    const collComm        = analytics.collectedCommission     ?? 0;
+                    const collFee         = analytics.collectedServiceFee     ?? 0;
+                    const mComm           = analytics.thisMonthCommission     ?? 0;
+                    const mFee            = analytics.thisMonthServiceFee     ?? 0;
+                    const grandTotal      = commission + serviceFee;
+                    const totalCollected  = collComm + collFee;
+                    const totalPending    = grandTotal - totalCollected;
                     return (
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
+                      <div className="space-y-0">
+                        {/* Header row */}
+                        <div className="grid grid-cols-3 gap-2 pb-2 mb-1 border-b border-slate-100 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                          <span>Source</span>
+                          <span className="text-right">All Tours</span>
+                          <span className="text-right">Collected</span>
+                        </div>
+
+                        {/* Commission row */}
+                        <div className="grid grid-cols-3 gap-2 py-2.5 border-b border-slate-100 items-center">
                           <div>
                             <p className="text-sm font-semibold text-slate-700">Commission (15%)</p>
-                            <p className="text-xs text-slate-400">Platform cut from each paid tour</p>
+                            <p className="text-xs text-slate-400">This month: ${mComm.toFixed(2)}</p>
                           </div>
-                          <div className="text-right">
-                            <p className="text-base font-black text-slate-800">${commission.toFixed(2)}</p>
-                            <p className="text-xs text-slate-400">this month: ${mComm.toFixed(2)}</p>
-                          </div>
+                          <p className="text-sm font-bold text-slate-800 text-right">${commission.toFixed(2)}</p>
+                          <p className="text-sm font-semibold text-slate-500 text-right">${collComm.toFixed(2)}</p>
                         </div>
-                        <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
+
+                        {/* Service fee row */}
+                        <div className="grid grid-cols-3 gap-2 py-2.5 border-b border-slate-100 items-center">
                           <div>
                             <p className="text-sm font-semibold text-slate-700">Service Charges</p>
-                            <p className="text-xs text-slate-400">Tourist service fee per booking ($2–$5)</p>
+                            <p className="text-xs text-slate-400">This month: ${mFee.toFixed(2)}</p>
                           </div>
-                          <div className="text-right">
-                            <p className="text-base font-black text-slate-800">${serviceFee.toFixed(2)}</p>
-                            <p className="text-xs text-slate-400">this month: ${mFee.toFixed(2)}</p>
-                          </div>
+                          <p className="text-sm font-bold text-slate-800 text-right">${serviceFee.toFixed(2)}</p>
+                          <p className="text-sm font-semibold text-slate-500 text-right">${collFee.toFixed(2)}</p>
                         </div>
-                        <div className="flex justify-between items-center py-2.5">
+
+                        {/* Total row */}
+                        <div className="grid grid-cols-3 gap-2 pt-2.5 items-center">
                           <div>
-                            <p className="text-sm font-bold text-slate-800">Total Booking Revenue</p>
-                            <p className="text-xs text-slate-400">this month: ${(mComm + mFee).toFixed(2)}</p>
+                            <p className="text-sm font-bold text-slate-800">Total</p>
+                            <p className="text-xs text-slate-400">Pending: ${totalPending.toFixed(2)}</p>
                           </div>
-                          <span className="text-xl font-black text-blue-700">${total.toFixed(2)}</span>
+                          <p className="text-base font-black text-blue-700 text-right">${grandTotal.toFixed(2)}</p>
+                          <p className="text-base font-black text-slate-700 text-right">${totalCollected.toFixed(2)}</p>
                         </div>
                       </div>
                     );
@@ -2497,7 +2510,7 @@ function AdminDashboard({ user, onLogout }) {
                   {
                     label: "Total Booking Revenue",
                     value: "$" + ((analytics.totalCommissionAllTime ?? 0) + (analytics.totalServiceFeeAllTime ?? 0)).toFixed(2),
-                    sub: "Commission + service fees all-time",
+                    sub: `Collected: $${((analytics.collectedCommission ?? 0) + (analytics.collectedServiceFee ?? 0)).toFixed(2)}`,
                   },
                   {
                     label: "Premium Revenue",
