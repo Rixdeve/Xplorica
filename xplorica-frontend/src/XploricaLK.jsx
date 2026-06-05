@@ -2163,37 +2163,37 @@ function AdminDashboard({ user, onLogout }) {
 
                 {/* Action bar */}
                 {g.status === "PENDING" && (
-                  <div className="border-t border-slate-100 px-6 py-4 flex gap-3 bg-slate-50">
-                    <button
-                      disabled={actionLoading === g.id}
-                      onClick={() => action(g.id, "approve")}
-                      className="flex-1 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition">
-                      {actionLoading === g.id ? "…" : "✓ Approve"}
-                    </button>
+                  <div className="border-t border-slate-100 px-6 py-3 flex items-center justify-end gap-2 bg-slate-50">
                     <button
                       disabled={actionLoading === g.id}
                       onClick={() => action(g.id, "reject")}
-                      className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition">
+                      className="px-4 py-1.5 text-xs font-semibold rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 transition">
                       ✕ Reject
+                    </button>
+                    <button
+                      disabled={actionLoading === g.id}
+                      onClick={() => action(g.id, "approve")}
+                      className="px-4 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50 transition">
+                      {actionLoading === g.id ? "…" : "✓ Approve"}
                     </button>
                   </div>
                 )}
                 {g.status === "APPROVED" && (
-                  <div className="border-t border-slate-100 px-6 py-4 flex gap-3 bg-slate-50">
+                  <div className="border-t border-slate-100 px-6 py-3 flex items-center justify-end gap-2 bg-slate-50">
                     <button
                       disabled={actionLoading === g.id}
                       onClick={() => action(g.id, "reject")}
-                      className="bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-sm py-2 px-5 rounded-xl transition disabled:opacity-50">
+                      className="px-4 py-1.5 text-xs font-semibold rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 transition">
                       Revoke Approval
                     </button>
                   </div>
                 )}
                 {g.status === "REJECTED" && (
-                  <div className="border-t border-slate-100 px-6 py-4 flex gap-3 bg-slate-50">
+                  <div className="border-t border-slate-100 px-6 py-3 flex items-center justify-end gap-2 bg-slate-50">
                     <button
                       disabled={actionLoading === g.id}
                       onClick={() => action(g.id, "approve")}
-                      className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-sm py-2 px-5 rounded-xl transition disabled:opacity-50">
+                      className="px-4 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50 transition">
                       ✓ Re-approve
                     </button>
                   </div>
