@@ -114,6 +114,12 @@ public class BookingService {
         return toResponse(bookingRepo.save(b));
     }
 
+    /** Admin — all bookings ordered by newest first */
+    public List<BookingResponse> getAllBookings() {
+        return bookingRepo.findAllByOrderByCreatedAtDesc()
+            .stream().map(this::toResponse).toList();
+    }
+
     /** Guide accepts or rejects a booking; tourist may cancel their own PENDING booking */
     @Transactional
     public BookingResponse updateStatus(String email, Long bookingId, Booking.Status status) {

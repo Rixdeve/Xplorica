@@ -217,6 +217,7 @@ class PrivacyController {
 class AdminController {
 
     private final com.xplorica.service.AdminService adminService;
+    private final com.xplorica.service.BookingService bookingService;
     private final com.xplorica.repository.UserRepository userRepo;
 
     @GetMapping("/guides")
@@ -235,6 +236,14 @@ class AdminController {
     ) {
         requireAdmin(currentUser);
         return ResponseEntity.ok(adminService.setStatus(id, com.xplorica.entity.GuideProfile.Status.APPROVED));
+    }
+
+    @GetMapping("/bookings")
+    public ResponseEntity<java.util.List<com.xplorica.dto.BookingResponse>> listBookings(
+        @AuthenticationPrincipal UserDetails currentUser
+    ) {
+        requireAdmin(currentUser);
+        return ResponseEntity.ok(bookingService.getAllBookings());
     }
 
     @PostMapping("/guides/{id}/reject")

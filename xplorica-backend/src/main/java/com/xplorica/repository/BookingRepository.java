@@ -24,4 +24,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         return existsByTouristIdAndGuideUserIdAndStatusNot(
             touristId, guideUserId, Booking.Status.CANCELLED);
     }
+
+    List<Booking> findAllByOrderByCreatedAtDesc();
 }
