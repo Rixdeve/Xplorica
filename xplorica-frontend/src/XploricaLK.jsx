@@ -2144,20 +2144,17 @@ function AdminDashboard({ user, onLogout }) {
 
         {/* Tours Section */}
         {section === "tours" && <>
-          {/* Search */}
-          <div className="mb-4">
+          {/* Search + Filter bar — single row */}
+          <div className="flex items-center gap-4 mb-6">
             <input
               value={tourSearch}
               onChange={e => setTourSearch(e.target.value)}
-              placeholder="Search by tourist name, guide name, destination or booking ID…"
-              className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+              placeholder="Search tourist, guide, destination or ID…"
+              className="w-56 px-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white shrink-0"
             />
-          </div>
-
-          {/* Filter bar */}
-          <div className="flex flex-wrap gap-6 mb-6">
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Tour Status</p>
+            <div className="h-5 w-px bg-slate-200 shrink-0" />
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Status</span>
               <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
                 {["ALL", "PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"].map(s => (
                   <button key={s} onClick={() => setTourFilter(s)}
@@ -2167,8 +2164,9 @@ function AdminDashboard({ user, onLogout }) {
                 ))}
               </div>
             </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Payment</p>
+            <div className="h-5 w-px bg-slate-200 shrink-0" />
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Payment</span>
               <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
                 {[
                   { key: "ALL",    label: "All" },
@@ -2185,6 +2183,7 @@ function AdminDashboard({ user, onLogout }) {
           </div>
 
           {toursLoading ? <Spinner /> : (() => {
+
             const q = tourSearch.trim().toLowerCase();
             const filtered = tours
               .filter(b => tourFilter === "ALL" || b.status === tourFilter)
@@ -2203,8 +2202,8 @@ function AdminDashboard({ user, onLogout }) {
             ) : (
               <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
                 {/* Table header */}
-                <div className="grid px-6 py-3 border-b border-slate-200 bg-slate-50 text-xs font-bold text-slate-400 uppercase tracking-widest"
-                  style={{ gridTemplateColumns: "64px 1fr 1fr 1fr 160px 120px" }}>
+                <div className="grid gap-4 px-6 py-3 border-b border-slate-200 bg-slate-50 text-xs font-bold text-slate-400 uppercase tracking-widest"
+                  style={{ gridTemplateColumns: "56px 1fr 1fr 1fr 190px 96px" }}>
                   <span>Ref</span>
                   <span>Tourist</span>
                   <span>Guide</span>
@@ -2224,8 +2223,8 @@ function AdminDashboard({ user, onLogout }) {
 
                   return (
                     <div key={b.id}
-                      className={`grid px-6 py-4 border-b border-slate-100 last:border-0 transition-colors hover:bg-slate-50 ${i % 2 === 1 ? "bg-slate-50/60" : "bg-white"}`}
-                      style={{ gridTemplateColumns: "64px 1fr 1fr 1fr 160px 120px" }}>
+                      className={`grid gap-4 px-6 py-4 border-b border-slate-100 last:border-0 transition-colors hover:bg-slate-50 ${i % 2 === 1 ? "bg-slate-50/60" : "bg-white"}`}
+                      style={{ gridTemplateColumns: "56px 1fr 1fr 1fr 190px 96px" }}>
 
                       {/* Ref */}
                       <div className="pt-0.5">
