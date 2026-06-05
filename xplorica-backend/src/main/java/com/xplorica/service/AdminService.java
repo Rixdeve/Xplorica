@@ -45,12 +45,12 @@ public class AdminService {
             .filter(b -> b.getPaymentStatus() == Booking.PaymentStatus.PAID)
             .toList();
 
-        // ── Helper: total platform income per paid booking (commission + service fee) ──
+        // ── Helper: platform income per booking (commission + service fee) ──
         java.util.function.ToDoubleFunction<Booking> bookingIncome = b ->
             (b.getPlatformCommission() != null ? b.getPlatformCommission() : 0.0)
           + (b.getServiceFee()         != null ? b.getServiceFee()         : 0.0);
 
-        // ── Daily revenue — last 30 days ──────────────────────────────────
+        // ── Daily revenue — last 30 days (paid bookings only) ─────────────
         DateTimeFormatter dayFmt = DateTimeFormatter.ofPattern("MMM d");
         LocalDate today = LocalDate.now();
         Map<String, Double> daily = new LinkedHashMap<>();
@@ -117,30 +117,17 @@ public class AdminService {
             .sorted(Comparator.comparingLong(AdminAnalyticsResponse.GuideRankEntry::getBookings).reversed())
             .limit(10).collect(Collectors.toList());
 
-        // ── Commission & service fee totals ──────────────────────────────
-        // All non-cancelled tours — commission/service fee is set at booking creation
-        List<Booking> active = all.stream()
-            .filter(b -> b.getStatus() != Booking.Status.CANCELLED)
-            .toList();
-
-        double totalCommission = active.stream()
-            .mapToDouble(b -> b.getPlatformCommission() != null ? b.getPlatformCommission() : 0.0).sum();
-        double totalServiceFee = active.stream()
-            .mapToDouble(b -> b.getServiceFee()         != null ? b.getServiceFee()         : 0.0).sum();
-
-        // Collected = only bookings where payment was received
-        double collectedCommission = paid.stream()
-            .mapToDouble(b -> b.getPlatformCommission() != null ? b.getPlatformCommission() : 0.0).sum();
-        double collectedServiceFee = paid.stream()
-            .mapToDouble(b -> b.getServiceFee()         != null ? b.getServiceFee()         : 0.0).sum();
-
-        // This month (all non-cancelled)
+        // ── Commission & service fee totals (paid bookings only) ─────────
         String currentMonth = YearMonth.now().format(DateTimeFormatter.ofPattern("MMM yy"));
-        double thisMonthCommission = active.stream()
+        double totalCommission = paid.stream()
+            .mapToDouble(b -> b.getPlatformCommission() != null ? b.getPlatformCommission() : 0.0).sum();
+        double totalServiceFee = paid.stream()
+            .mapToDouble(b -> b.getServiceFee()         != null ? b.getServiceFee()         : 0.0).sum();
+        double thisMonthCommission = paid.stream()
             .filter(b -> b.getCreatedAt() != null
                 && YearMonth.from(b.getCreatedAt()).format(DateTimeFormatter.ofPattern("MMM yy")).equals(currentMonth))
             .mapToDouble(b -> b.getPlatformCommission() != null ? b.getPlatformCommission() : 0.0).sum();
-        double thisMonthServiceFee = active.stream()
+        double thisMonthServiceFee = paid.stream()
             .filter(b -> b.getCreatedAt() != null
                 && YearMonth.from(b.getCreatedAt()).format(DateTimeFormatter.ofPattern("MMM yy")).equals(currentMonth))
             .mapToDouble(b -> b.getServiceFee()         != null ? b.getServiceFee()         : 0.0).sum();
@@ -163,8 +150,6 @@ public class AdminService {
         resp.setTotalPremiumAllTime(everPremium * 10.0);
         resp.setTotalCommissionAllTime(totalCommission);
         resp.setTotalServiceFeeAllTime(totalServiceFee);
-        resp.setCollectedCommission(collectedCommission);
-        resp.setCollectedServiceFee(collectedServiceFee);
         resp.setThisMonthCommission(thisMonthCommission);
         resp.setThisMonthServiceFee(thisMonthServiceFee);
         return resp;

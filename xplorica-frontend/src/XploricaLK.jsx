@@ -2354,7 +2354,7 @@ function AdminDashboard({ user, onLogout }) {
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h2 className="text-lg font-bold text-slate-800">Platform Revenue</h2>
-                    <p className="text-xs text-slate-400 mt-0.5">Commission earned from paid bookings</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Commission + service fee from paid bookings</p>
                   </div>
                   <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
                     {[
@@ -2418,52 +2418,30 @@ function AdminDashboard({ user, onLogout }) {
                   <h3 className="font-bold text-slate-800 mb-1">Booking Income</h3>
                   <p className="text-xs text-slate-400 mb-5">From paid bookings — commission + service charge</p>
                   {(() => {
-                    const commission      = analytics.totalCommissionAllTime ?? 0;
-                    const serviceFee      = analytics.totalServiceFeeAllTime  ?? 0;
-                    const collComm        = analytics.collectedCommission     ?? 0;
-                    const collFee         = analytics.collectedServiceFee     ?? 0;
-                    const mComm           = analytics.thisMonthCommission     ?? 0;
-                    const mFee            = analytics.thisMonthServiceFee     ?? 0;
-                    const grandTotal      = commission + serviceFee;
-                    const totalCollected  = collComm + collFee;
-                    const totalPending    = grandTotal - totalCollected;
+                    const commission = analytics.totalCommissionAllTime ?? 0;
+                    const serviceFee = analytics.totalServiceFeeAllTime  ?? 0;
+                    const mComm      = analytics.thisMonthCommission     ?? 0;
+                    const mFee       = analytics.thisMonthServiceFee     ?? 0;
+                    const total      = commission + serviceFee;
                     return (
-                      <div className="space-y-0">
-                        {/* Header row */}
-                        <div className="grid grid-cols-3 gap-2 pb-2 mb-1 border-b border-slate-100 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                          <span>Source</span>
-                          <span className="text-right">All Tours</span>
-                          <span className="text-right">Collected</span>
-                        </div>
-
-                        {/* Commission row */}
-                        <div className="grid grid-cols-3 gap-2 py-2.5 border-b border-slate-100 items-center">
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
                           <div>
                             <p className="text-sm font-semibold text-slate-700">Commission (15%)</p>
                             <p className="text-xs text-slate-400">This month: ${mComm.toFixed(2)}</p>
                           </div>
-                          <p className="text-sm font-bold text-slate-800 text-right">${commission.toFixed(2)}</p>
-                          <p className="text-sm font-semibold text-slate-500 text-right">${collComm.toFixed(2)}</p>
+                          <p className="text-base font-bold text-slate-800">${commission.toFixed(2)}</p>
                         </div>
-
-                        {/* Service fee row */}
-                        <div className="grid grid-cols-3 gap-2 py-2.5 border-b border-slate-100 items-center">
+                        <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
                           <div>
                             <p className="text-sm font-semibold text-slate-700">Service Charges</p>
                             <p className="text-xs text-slate-400">This month: ${mFee.toFixed(2)}</p>
                           </div>
-                          <p className="text-sm font-bold text-slate-800 text-right">${serviceFee.toFixed(2)}</p>
-                          <p className="text-sm font-semibold text-slate-500 text-right">${collFee.toFixed(2)}</p>
+                          <p className="text-base font-bold text-slate-800">${serviceFee.toFixed(2)}</p>
                         </div>
-
-                        {/* Total row */}
-                        <div className="grid grid-cols-3 gap-2 pt-2.5 items-center">
-                          <div>
-                            <p className="text-sm font-bold text-slate-800">Total</p>
-                            <p className="text-xs text-slate-400">Pending: ${totalPending.toFixed(2)}</p>
-                          </div>
-                          <p className="text-base font-black text-blue-700 text-right">${grandTotal.toFixed(2)}</p>
-                          <p className="text-base font-black text-slate-700 text-right">${totalCollected.toFixed(2)}</p>
+                        <div className="flex justify-between items-center pt-1">
+                          <p className="text-sm font-bold text-slate-800">Total Revenue</p>
+                          <p className="text-xl font-black text-blue-700">${total.toFixed(2)}</p>
                         </div>
                       </div>
                     );
@@ -2510,7 +2488,7 @@ function AdminDashboard({ user, onLogout }) {
                   {
                     label: "Total Booking Revenue",
                     value: "$" + ((analytics.totalCommissionAllTime ?? 0) + (analytics.totalServiceFeeAllTime ?? 0)).toFixed(2),
-                    sub: `Collected: $${((analytics.collectedCommission ?? 0) + (analytics.collectedServiceFee ?? 0)).toFixed(2)}`,
+                    sub: "Commission + service fees (paid bookings)",
                   },
                   {
                     label: "Premium Revenue",
