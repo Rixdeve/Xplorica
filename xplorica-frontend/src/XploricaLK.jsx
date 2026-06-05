@@ -1934,6 +1934,7 @@ function AdminDashboard({ user, onLogout }) {
   const [toursLoading, setToursLoading]   = useState(false);
   const [tourFilter, setTourFilter]       = useState("ALL");
   const [tourSearch, setTourSearch]       = useState("");
+  const [tourPayFilter, setTourPayFilter] = useState("ALL");
 
   const load = (status) => {
     setLoading(true);
@@ -2143,49 +2144,72 @@ function AdminDashboard({ user, onLogout }) {
 
         {/* Tours Section */}
         {section === "tours" && <>
-          {/* Search + filter bar */}
-          <div className="flex flex-wrap items-center gap-3 mb-5">
-            <div className="relative flex-1 min-w-48">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
-              <input
-                value={tourSearch}
-                onChange={e => setTourSearch(e.target.value)}
-                placeholder="Search by tourist, guide, destination or ID…"
-                className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-              />
+          {/* Search */}
+          <div className="mb-4">
+            <input
+              value={tourSearch}
+              onChange={e => setTourSearch(e.target.value)}
+              placeholder="Search by tourist name, guide name, destination or booking ID…"
+              className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+            />
+          </div>
+
+          {/* Filter bar */}
+          <div className="flex flex-wrap gap-6 mb-6">
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Tour Status</p>
+              <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
+                {["ALL", "PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"].map(s => (
+                  <button key={s} onClick={() => setTourFilter(s)}
+                    className={`px-3 py-1 text-xs font-semibold rounded-md transition ${tourFilter === s ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                    {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="flex gap-1 bg-white rounded-xl p-1 border border-slate-200">
-              {["ALL", "PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"].map(s => (
-                <button key={s} onClick={() => setTourFilter(s)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition ${tourFilter === s ? "bg-blue-700 text-white shadow" : "text-slate-500 hover:text-slate-700"}`}>
-                  {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
-                </button>
-              ))}
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Payment</p>
+              <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
+                {[
+                  { key: "ALL",    label: "All" },
+                  { key: "PAID",   label: "Paid" },
+                  { key: "UNPAID", label: "Unpaid" },
+                ].map(s => (
+                  <button key={s.key} onClick={() => setTourPayFilter(s.key)}
+                    className={`px-3 py-1 text-xs font-semibold rounded-md transition ${tourPayFilter === s.key ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
           {toursLoading ? <Spinner /> : (() => {
-            const TOUR_STATUS_COLORS = { PENDING: "amber", CONFIRMED: "blue", COMPLETED: "emerald", CANCELLED: "slate" };
             const q = tourSearch.trim().toLowerCase();
-            const filtered = (tourFilter === "ALL" ? tours : tours.filter(b => b.status === tourFilter))
+            const filtered = tours
+              .filter(b => tourFilter === "ALL" || b.status === tourFilter)
+              .filter(b => tourPayFilter === "ALL" || (tourPayFilter === "PAID" ? b.paymentStatus === "PAID" : b.paymentStatus !== "PAID"))
               .filter(b => !q || [b.touristName, b.guideName, b.destination, String(b.id)]
                 .some(v => v?.toLowerCase().includes(q)));
 
+            const statusLabel = { PENDING: "Pending", CONFIRMED: "Confirmed", COMPLETED: "Completed", CANCELLED: "Cancelled" };
+            const statusStyle = { PENDING: "text-amber-700", CONFIRMED: "text-slate-800 font-semibold", COMPLETED: "text-slate-600", CANCELLED: "text-slate-400" };
+
             return filtered.length === 0 ? (
               <div className="text-center py-16 text-slate-400">
-                <p className="text-4xl mb-3">🗺</p>
-                <p className="font-semibold">No tours match your search</p>
+                <p className="font-semibold">No tours match your filters</p>
+                <p className="text-sm mt-1">Try adjusting the search or filter options above.</p>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+              <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
                 {/* Table header */}
-                <div className="grid gap-3 px-4 py-2.5 border-b border-slate-100 bg-slate-50 text-xs font-bold text-slate-400 uppercase tracking-wider"
-                  style={{ gridTemplateColumns: "48px 1fr 1fr 1.4fr 140px 150px" }}>
-                  <span>#</span>
+                <div className="grid px-6 py-3 border-b border-slate-200 bg-slate-50 text-xs font-bold text-slate-400 uppercase tracking-widest"
+                  style={{ gridTemplateColumns: "64px 1fr 1fr 1fr 160px 120px" }}>
+                  <span>Ref</span>
                   <span>Tourist</span>
                   <span>Guide</span>
                   <span>Tour</span>
-                  <span>Amount / Fees</span>
+                  <span>Financials</span>
                   <span>Status</span>
                 </div>
 
@@ -2194,68 +2218,68 @@ function AdminDashboard({ user, onLogout }) {
                   const days = b.startDate && b.endDate
                     ? Math.round((new Date(b.endDate) - new Date(b.startDate)) / 86400000) + 1
                     : null;
+                  const grandTotal  = ((b.totalAmount || 0) + (b.serviceFee || 0)).toFixed(2);
+                  const guideGets   = ((b.totalAmount || 0) - (b.platformCommission || 0)).toFixed(2);
+                  const isPaid      = b.paymentStatus === "PAID";
+
                   return (
                     <div key={b.id}
-                      className={`grid gap-3 px-4 py-3 items-center border-b border-slate-50 last:border-0 hover:bg-blue-50/40 transition-colors ${i % 2 === 1 ? "bg-slate-50/50" : ""}`}
-                      style={{ gridTemplateColumns: "48px 1fr 1fr 1.4fr 72px 150px" }}>
+                      className={`grid px-6 py-4 border-b border-slate-100 last:border-0 transition-colors hover:bg-slate-50 ${i % 2 === 1 ? "bg-slate-50/60" : "bg-white"}`}
+                      style={{ gridTemplateColumns: "64px 1fr 1fr 1fr 160px 120px" }}>
 
-                      {/* ID */}
-                      <span className="text-xs text-slate-400 font-mono font-bold">#{b.id}</span>
+                      {/* Ref */}
+                      <div className="pt-0.5">
+                        <p className="text-sm font-bold text-slate-700">#{b.id}</p>
+                      </div>
 
                       {/* Tourist */}
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Avatar name={b.touristName || "?"} size={26} />
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-blue-950 truncate leading-tight">{b.touristName || "—"}</p>
-                          <p className="text-xs text-slate-400">👥 {b.numberOfPeople || 1}</p>
-                        </div>
+                      <div className="min-w-0 pr-3">
+                        <p className="text-sm font-semibold text-slate-800 truncate">{b.touristName || "—"}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">Tourist ID: {b.touristId || "—"}</p>
+                        <p className="text-xs text-slate-400">Party of {b.numberOfPeople || 1}</p>
                       </div>
 
                       {/* Guide */}
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Avatar name={b.guideName || "?"} size={26} />
-                        <p className="text-sm font-semibold text-blue-950 truncate">{b.guideName || "—"}</p>
+                      <div className="min-w-0 pr-3">
+                        <p className="text-sm font-semibold text-slate-800 truncate">{b.guideName || "—"}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">Guide Ref: {b.guideProfileId || "—"}</p>
                       </div>
 
-                      {/* Tour info */}
-                      <div className="min-w-0">
-                        <p className="text-xs text-slate-600 leading-tight">
-                          📅 {b.startDate} → {b.endDate}{days ? <span className="text-slate-400"> · {days}d</span> : ""}
+                      {/* Tour */}
+                      <div className="min-w-0 pr-3">
+                        <p className="text-sm text-slate-700">{b.startDate} — {b.endDate}</p>
+                        {days && <p className="text-xs text-slate-400 mt-0.5">{days} {days === 1 ? "day" : "days"}</p>}
+                        {b.destination && <p className="text-xs text-slate-500 mt-0.5 truncate">{b.destination}</p>}
+                      </div>
+
+                      {/* Financials */}
+                      <div className="space-y-1 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Total paid</span>
+                          <span className="font-bold text-slate-800">${grandTotal}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Svc fee</span>
+                          <span className="text-slate-600">${(b.serviceFee || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Commission</span>
+                          <span className="text-slate-600">${(b.platformCommission || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between border-t border-slate-100 pt-1">
+                          <span className="text-slate-400">Guide receives</span>
+                          <span className="font-semibold text-slate-700">${guideGets}</span>
+                        </div>
+                      </div>
+
+                      {/* Status */}
+                      <div className="space-y-1">
+                        <p className={`text-sm ${statusStyle[b.status] || "text-slate-600"}`}>
+                          {statusLabel[b.status] || b.status}
                         </p>
-                        {b.destination && (
-                          <p className="text-xs text-slate-400 truncate mt-0.5">📍 {b.destination}</p>
-                        )}
-                      </div>
-
-                      {/* Amount / Fees */}
-                      <div className="space-y-0.5">
-                        <p className="text-sm font-bold text-blue-950">
-                          ${((b.totalAmount || 0) + (b.serviceFee || 0)).toFixed(2)}
+                        <p className={`text-xs ${isPaid ? "text-slate-700 font-medium" : "text-slate-400"}`}>
+                          {isPaid ? "Paid" : b.status === "CANCELLED" ? "—" : "Unpaid"}
                         </p>
-                        <div className="flex justify-between text-xs text-slate-400">
-                          <span>Svc fee</span>
-                          <span className="font-medium text-slate-500">${(b.serviceFee || 0).toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-xs text-slate-400">
-                          <span>Commission</span>
-                          <span className="font-medium text-emerald-600">${(b.platformCommission || 0).toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-xs border-t border-slate-100 pt-0.5">
-                          <span className="text-slate-400">Guide gets</span>
-                          <span className="font-bold text-blue-700">
-                            ${((b.totalAmount || 0) - (b.platformCommission || 0)).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Status badges */}
-                      <div className="flex gap-1 flex-wrap">
-                        <Badge color={TOUR_STATUS_COLORS[b.status] || "slate"}>
-                          {b.status.charAt(0) + b.status.slice(1).toLowerCase()}
-                        </Badge>
-                        {b.paymentStatus === "PAID"
-                          ? <Badge color="emerald">Paid</Badge>
-                          : b.status !== "CANCELLED" && <Badge color="amber">Unpaid</Badge>}
                       </div>
                     </div>
                   );
