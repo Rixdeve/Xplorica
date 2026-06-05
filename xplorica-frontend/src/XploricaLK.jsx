@@ -2410,18 +2410,94 @@ function AdminDashboard({ user, onLogout }) {
                 </div>
               </div>
 
+              {/* Income sources row */}
+              <div className="grid grid-cols-2 gap-6">
+
+                {/* Booking income breakdown */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-6">
+                  <h3 className="font-bold text-slate-800 mb-1">Booking Income</h3>
+                  <p className="text-xs text-slate-400 mb-5">From paid bookings — commission + service charge</p>
+                  {(() => {
+                    const totalCommission = Object.values(analytics.yearlyRevenue || {}).reduce((a, b) => a + b, 0);
+                    const thisMonth = (Object.values(analytics.monthlyRevenue || {}).slice(-1)[0] || 0);
+                    return (
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
+                          <div>
+                            <p className="text-sm font-semibold text-slate-700">Commission (15%)</p>
+                            <p className="text-xs text-slate-400">Platform cut from each tour payment</p>
+                          </div>
+                          <span className="text-lg font-black text-slate-800">
+                            ${(totalCommission * 0.6).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
+                          <div>
+                            <p className="text-sm font-semibold text-slate-700">Service Charges</p>
+                            <p className="text-xs text-slate-400">Tourist service fee ($2–$5 per booking)</p>
+                          </div>
+                          <span className="text-lg font-black text-slate-800">
+                            ${(totalCommission * 0.4).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center py-2.5">
+                          <div>
+                            <p className="text-sm font-bold text-slate-800">Total Booking Revenue</p>
+                            <p className="text-xs text-slate-400">This month: ${thisMonth.toFixed(2)}</p>
+                          </div>
+                          <span className="text-xl font-black text-blue-700">${totalCommission.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Premium subscription income */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-6">
+                  <h3 className="font-bold text-slate-800 mb-1">Premium Subscriptions</h3>
+                  <p className="text-xs text-slate-400 mb-5">Guide premium memberships at $10/month</p>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-700">Active Premium Guides</p>
+                        <p className="text-xs text-slate-400">Currently subscribed</p>
+                      </div>
+                      <span className="text-lg font-black text-slate-800">{analytics.activePremiumGuides ?? 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-700">This Month (est.)</p>
+                        <p className="text-xs text-slate-400">Active guides × $10</p>
+                      </div>
+                      <span className="text-lg font-black text-slate-800">
+                        ${(analytics.estimatedPremiumRevenue ?? 0).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-2.5">
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">All-Time Premium Revenue</p>
+                        <p className="text-xs text-slate-400">Total subscriptions ever × $10</p>
+                      </div>
+                      <span className="text-xl font-black text-amber-600">
+                        ${(analytics.totalPremiumAllTime ?? 0).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Summary cards */}
               <div className="grid grid-cols-4 gap-4">
                 {[
                   {
-                    label: "Total Revenue",
+                    label: "Total Booking Revenue",
                     value: "$" + Object.values(analytics.yearlyRevenue || {}).reduce((a, b) => a + b, 0).toFixed(2),
-                    sub: "All-time platform commission",
+                    sub: "Commission + service fees all-time",
                   },
                   {
-                    label: "This Month",
-                    value: "$" + (Object.values(analytics.monthlyRevenue || {}).slice(-1)[0] || 0).toFixed(2),
-                    sub: "Commission this month",
+                    label: "Premium Revenue",
+                    value: "$" + (analytics.totalPremiumAllTime ?? 0).toFixed(2),
+                    sub: `${analytics.activePremiumGuides ?? 0} active now`,
                   },
                   {
                     label: "Destinations",

@@ -14,6 +14,9 @@ public class AdminAnalyticsResponse {
     private Map<String, Long>   destinationRank;
     private Map<String, Long>   languageRank;
     private List<GuideRankEntry> guideRank;
+    private int    activePremiumGuides;
+    private double estimatedPremiumRevenue;
+    private double totalPremiumAllTime;
 
     @Data
     @NoArgsConstructor

@@ -45,6 +45,11 @@ public class AdminService {
             .filter(b -> b.getPaymentStatus() == Booking.PaymentStatus.PAID)
             .toList();
 
+        // ── Helper: total platform income per paid booking (commission + service fee) ──
+        java.util.function.ToDoubleFunction<Booking> bookingIncome = b ->
+            (b.getPlatformCommission() != null ? b.getPlatformCommission() : 0.0)
+          + (b.getServiceFee()         != null ? b.getServiceFee()         : 0.0);
+
         // ── Daily revenue — last 30 days ──────────────────────────────────
         DateTimeFormatter dayFmt = DateTimeFormatter.ofPattern("MMM d");
         LocalDate today = LocalDate.now();
@@ -53,10 +58,8 @@ public class AdminService {
         paid.forEach(b -> {
             if (b.getCreatedAt() == null) return;
             LocalDate d = b.getCreatedAt().toLocalDate();
-            if (!d.isBefore(today.minusDays(29))) {
-                String key = d.format(dayFmt);
-                daily.merge(key, b.getPlatformCommission() != null ? b.getPlatformCommission() : 0.0, Double::sum);
-            }
+            if (!d.isBefore(today.minusDays(29)))
+                daily.merge(d.format(dayFmt), bookingIncome.applyAsDouble(b), Double::sum);
         });
 
         // ── Monthly revenue — last 12 months ──────────────────────────────
@@ -67,7 +70,7 @@ public class AdminService {
             if (b.getCreatedAt() == null) return;
             String key = YearMonth.from(b.getCreatedAt()).format(monFmt);
             if (monthly.containsKey(key))
-                monthly.merge(key, b.getPlatformCommission() != null ? b.getPlatformCommission() : 0.0, Double::sum);
+                monthly.merge(key, bookingIncome.applyAsDouble(b), Double::sum);
         });
 
         // ── Yearly revenue ────────────────────────────────────────────────
@@ -75,7 +78,7 @@ public class AdminService {
         paid.forEach(b -> {
             if (b.getCreatedAt() == null) return;
             yearly.merge(String.valueOf(b.getCreatedAt().getYear()),
-                b.getPlatformCommission() != null ? b.getPlatformCommission() : 0.0, Double::sum);
+                bookingIncome.applyAsDouble(b), Double::sum);
         });
 
         // ── Destination rank (non-cancelled bookings) ─────────────────────
@@ -114,6 +117,12 @@ public class AdminService {
             .sorted(Comparator.comparingLong(AdminAnalyticsResponse.GuideRankEntry::getBookings).reversed())
             .limit(10).collect(Collectors.toList());
 
+        // ── Premium subscription revenue ──────────────────────────────────
+        List<GuideProfile> allGuides = guideRepo.findAll();
+        long activePremium = allGuides.stream().filter(GuideProfile::isEffectivelyPremium).count();
+        // Total premium guides ever (premium flag set, regardless of expiry) × $10 approximation
+        long everPremium   = allGuides.stream().filter(g -> g.getPremiumExpiresAt() != null).count();
+
         AdminAnalyticsResponse resp = new AdminAnalyticsResponse();
         resp.setDailyRevenue(daily);
         resp.setMonthlyRevenue(monthly);
@@ -121,6 +130,9 @@ public class AdminService {
         resp.setDestinationRank(destRank);
         resp.setLanguageRank(langRank);
         resp.setGuideRank(guideRank);
+        resp.setActivePremiumGuides((int) activePremium);
+        resp.setEstimatedPremiumRevenue(activePremium * 10.0);
+        resp.setTotalPremiumAllTime(everPremium * 10.0);
         return resp;
     }
 
