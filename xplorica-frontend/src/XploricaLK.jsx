@@ -2592,21 +2592,21 @@ function MessagesPage({ user, onNav }) {
 
 // ── Chat Page ──────────────────────────────────────────────────────────────
 function ChatPage({ user, guide, onBack }) {
-  const [messages, setMessages]             = useState([]);
-  const [input, setInput]                   = useState("");
-  const [sendError, setSendError]           = useState("");
-  const [loadError, setLoadError]           = useState("");
-  const [locationShared, setLocationShared] = useState(false);
-  const [loading, setLoading]               = useState(true);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput]       = useState("");
+  const [sendError, setSendError]   = useState("");
+  const [loadError, setLoadError]   = useState("");
+  const [loading, setLoading]       = useState(true);
+  const [locLoading, setLocLoading] = useState(false);
   const endRef  = useRef(null);
   const pollRef = useRef(null);
 
-  // partnerId is the user-ID of the person we're chatting with
-  const partnerId = guide?.userId;
-  // current user's ID (stored as `id` in the session object)
-  const myId = user?.id;
+  const partnerId   = guide?.userId;
+  const myId        = user?.id;
   const partnerName = guide?.fullName || (user?.role === "GUIDE" ? "Tourist" : "Guide");
   const partnerPhoto = mediaUrl(guide?.photoUrl);
+
+  const LOC_PREFIX = "__LOC__";
 
   const loadMessages = async () => {
     if (!partnerId) return;
@@ -2628,18 +2628,88 @@ function ChatPage({ user, guide, onBack }) {
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
-  const send = async () => {
-    if (!input.trim() || !partnerId) return;
-    const text = input;
+  const send = async (text) => {
+    const content = text ?? input;
+    if (!content.trim() || !partnerId) return;
     setSendError("");
-    setInput("");
+    if (!text) setInput("");
     try {
-      const msg = await api.sendMessage(partnerId, text);
+      const msg = await api.sendMessage(partnerId, content);
       setMessages(p => [...p, msg]);
     } catch (err) {
-      setInput(text); // restore text so the user can retry
+      if (!text) setInput(content);
       setSendError(err.message || "Failed to send message");
     }
+  };
+
+  const shareLocation = () => {
+    if (!navigator.geolocation) { setSendError("Geolocation is not supported by your browser."); return; }
+    setLocLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        let address = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        try {
+          const r = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+            { headers: { "Accept-Language": "en" } }
+          );
+          const d = await r.json();
+          if (d.display_name) address = d.display_name;
+        } catch { /* keep coordinate fallback */ }
+        await send(`${LOC_PREFIX}${JSON.stringify({ lat, lng, address })}`);
+        setLocLoading(false);
+      },
+      (err) => {
+        setSendError("Location access denied or unavailable.");
+        setLocLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const renderMessage = (m) => {
+    if (m.content?.startsWith(LOC_PREFIX)) {
+      try {
+        const { lat, lng, address } = JSON.parse(m.content.slice(LOC_PREFIX.length));
+        const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+        const isMe = m.senderId === myId;
+        return (
+          <div className={`rounded-2xl overflow-hidden border shadow-sm w-72
+            ${isMe ? "border-blue-400 bg-blue-600" : "border-slate-200 bg-white"}`}>
+            {/* Map thumbnail via OpenStreetMap static tile */}
+            <div className="relative h-28 bg-slate-100">
+              <iframe
+                title="location"
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${lng-0.01},${lat-0.01},${lng+0.01},${lat+0.01}&layer=mapnik&marker=${lat},${lng}`}
+                className="w-full h-full border-0 pointer-events-none"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <span className="text-2xl drop-shadow">📍</span>
+              </div>
+            </div>
+            <div className={`px-3 py-2.5 ${isMe ? "text-white" : "text-slate-800"}`}>
+              <p className="text-xs font-bold mb-0.5">📍 Shared Location</p>
+              <p className={`text-xs leading-tight line-clamp-2 ${isMe ? "text-blue-100" : "text-slate-500"}`}>{address}</p>
+              <p className={`text-[10px] mt-1 ${isMe ? "text-blue-200" : "text-slate-400"}`}>{lat.toFixed(5)}°, {lng.toFixed(5)}°</p>
+              <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
+                className={`inline-block mt-2 text-xs font-semibold px-3 py-1 rounded-full transition
+                  ${isMe ? "bg-white/20 hover:bg-white/30 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}`}>
+                Open in Google Maps →
+              </a>
+            </div>
+          </div>
+        );
+      } catch { /* fall through to plain text */ }
+    }
+    const isMe = m.senderId === myId;
+    return (
+      <div className={`max-w-xs lg:max-w-md rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm
+        ${isMe ? "bg-blue-700 text-white rounded-br-sm" : "bg-white text-slate-800 border border-slate-100 rounded-bl-sm"}`}>
+        {m.content}
+      </div>
+    );
   };
 
   return (
@@ -2652,40 +2722,9 @@ function ChatPage({ user, guide, onBack }) {
           <p className="font-bold text-blue-950">{partnerName}</p>
           <p className="text-xs text-emerald-500 font-medium">● Online</p>
         </div>
-        <div className="ml-auto flex gap-2">
-          {locationShared
-            ? <Badge color="emerald">📍 Location Shared</Badge>
-            : <Btn size="sm" variant="outline" onClick={() => setLocationShared(true)}>Share Location</Btn>}
-        </div>
       </div>
 
-      {/* Location banner */}
-      {locationShared && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-4 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold text-emerald-800">📍 Live location active</p>
-            <p className="text-xs text-emerald-600">
-              {user?.role === "GUIDE" 
-                ? "You can see the tourist's current position" 
-                : `${partnerName} can see your current position`}
-            </p>
-          </div>
-          <Btn size="sm" variant="ghost" onClick={() => setLocationShared(false)}>Stop</Btn>
-        </div>
-      )}
-
-      {/* Mock map */}
-      {locationShared && (
-        <div className="bg-blue-50 rounded-2xl h-32 mb-4 flex items-center justify-center border border-blue-100">
-          <div className="text-center text-blue-600">
-            <p className="text-3xl mb-1">🗺</p>
-            <p className="text-sm font-semibold">Live map · Colombo, Sri Lanka</p>
-            <p className="text-xs text-blue-400">6.9271° N, 79.8612° E</p>
-          </div>
-        </div>
-      )}
-
-      {/* Messages from DB */}
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-4 pb-4 pr-1" style={{ minHeight: 0 }}>
         {loading && <Spinner />}
         {!loading && loadError && (
@@ -2699,13 +2738,8 @@ function ChatPage({ user, guide, onBack }) {
           return (
             <motion.div key={m.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               className={`flex ${isMe ? "justify-end" : "justify-start"} gap-3 items-end`}>
-              {!isMe && <Avatar name={guide?.fullName || "G"} photo={guide?.photoUrl} size={32} />}
-              <div className={`max-w-xs lg:max-w-md rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm
-                ${isMe
-                  ? "bg-blue-700 text-white rounded-br-sm"
-                  : "bg-white text-slate-800 border border-slate-100 rounded-bl-sm"}`}>
-                {m.content}
-              </div>
+              {!isMe && <Avatar name={guide?.fullName || "G"} photo={partnerPhoto} size={32} />}
+              {renderMessage(m)}
               {isMe && <Avatar name={user?.fullName || "You"} size={32} />}
             </motion.div>
           );
@@ -2718,14 +2752,25 @@ function ChatPage({ user, guide, onBack }) {
         {sendError && (
           <p className="text-red-500 text-xs bg-red-50 rounded-xl px-3 py-2 mb-2">{sendError}</p>
         )}
-        <div className="flex gap-3 items-end">
+        <div className="flex gap-2 items-end">
+          {/* Location button */}
+          <button
+            onClick={shareLocation}
+            disabled={locLoading}
+            title="Share your location"
+            className="w-11 h-11 shrink-0 flex items-center justify-center rounded-2xl border border-slate-200 bg-white hover:bg-emerald-50 hover:border-emerald-400 text-slate-500 hover:text-emerald-600 transition disabled:opacity-50">
+            {locLoading
+              ? <span className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+              : <span className="text-lg">📍</span>}
+          </button>
+
           <div className="flex-1 bg-white border border-slate-200 rounded-2xl px-4 py-3 flex items-center gap-2">
             <input value={input} onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())}
               placeholder="Type a message…"
               className="flex-1 text-sm focus:outline-none bg-transparent" />
           </div>
-          <Btn variant="primary" onClick={send} disabled={!input.trim()}>Send →</Btn>
+          <Btn variant="primary" onClick={() => send()} disabled={!input.trim()}>Send →</Btn>
         </div>
       </div>
     </div>
